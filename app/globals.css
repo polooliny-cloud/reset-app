@@ -1,5 +1,25 @@
 @import "tailwindcss";
 
+@keyframes onboarding-step {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sos-phase-text {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -10,6 +30,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --animate-onboarding-step: onboarding-step 0.35s ease-out both;
+  --animate-sos-phase-text: sos-phase-text 0.35s ease-out both;
 }
 
 @media (prefers-color-scheme: dark) {
