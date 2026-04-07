@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { trackOnce } from '@/lib/analytics';
+import { posthogCapture, posthogCaptureOnce } from '@/lib/posthogCapture';
 import { ONBOARDING_COMPLETED_KEY } from '@/lib/onboarding';
 
 const steps = [
@@ -42,6 +43,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     trackOnce('onboarding_start');
+    posthogCaptureOnce('onboarding_start');
   }, []);
 
   const isLast = currentStep === steps.length - 1;
@@ -49,6 +51,7 @@ export default function OnboardingPage() {
 
   function finish() {
     trackOnce('onboarding_complete');
+    posthogCapture('onboarding_complete');
     localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
     router.replace('/');
   }

@@ -2,9 +2,10 @@
 
 import { IBM_Plex_Sans } from 'next/font/google';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { trackOnce } from '@/lib/analytics';
+import { posthogCapture } from '@/lib/posthogCapture';
 
 const DURATION_SECONDS = 90;
 
@@ -51,6 +52,7 @@ function getTextPhase(timeLeft: number): 1 | 2 | 3 {
 export default function SosPage() {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState(DURATION_SECONDS);
+  const hasTrackedSosCompletedRef = useRef(false);
   const { title, subtitle } = getDynamicText(timeLeft);
   const textPhase = getTextPhase(timeLeft);
 
@@ -67,7 +69,10 @@ export default function SosPage() {
 
   useEffect(() => {
     if (timeLeft !== 0) return;
+    if (hasTrackedSosCompletedRef.current) return;
+    hasTrackedSosCompletedRef.current = true;
     trackOnce('sos_completed');
+    posthogCapture('sos_completed');
   }, [timeLeft]);
 
   return (

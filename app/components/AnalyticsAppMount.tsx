@@ -3,11 +3,13 @@
 import { useEffect } from 'react';
 
 import { trackOnce } from '@/lib/analytics';
+import { posthogCaptureOnce } from '@/lib/posthogCapture';
 
-/** Один раз за сессию монтирования корня приложения (см. trackOnce app_open). */
+/** Локальная аналитика + PostHog (один раз за монтирование корня). */
 export function AnalyticsAppMount() {
   useEffect(() => {
     trackOnce('app_open');
+    posthogCaptureOnce('app_open');
   }, []);
 
   return null;

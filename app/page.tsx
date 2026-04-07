@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 
 import { incrementMetric, trackEvent } from '@/lib/analytics';
+import { posthogCapture } from '@/lib/posthogCapture';
 
 const STORAGE_KEY = 'myapp_start_date';
 const CLAIMED_MEDALS_KEY = 'claimedMedals';
@@ -147,6 +148,7 @@ export default function Home() {
   function handleConfirmReset() {
     trackEvent('reset_click');
     incrementMetric('reset_click');
+    posthogCapture('reset_click');
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(CLAIMED_MEDALS_KEY);
     syncLabelFromStorage();
@@ -233,6 +235,7 @@ export default function Home() {
           onClick={() => {
             trackEvent('sos_click');
             incrementMetric('sos_click');
+            posthogCapture('sos_click');
           }}
           className="block w-full rounded-xl bg-red-600 px-3 py-4 text-center text-base font-bold leading-tight text-white sm:text-lg"
         >
