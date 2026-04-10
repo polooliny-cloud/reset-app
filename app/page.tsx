@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+
+import { XpLevelBlock } from './components/XpLevelBlock';
 
 import { incrementMetric, trackEvent } from '@/lib/analytics';
 import { posthogCapture } from '@/lib/posthogCapture';
@@ -10,6 +13,11 @@ const STORAGE_KEY = 'myapp_start_date';
 const CLAIMED_MEDALS_KEY = 'claimedMedals';
 
 const REWARD_THRESHOLDS = [3, 7, 14, 21, 30] as const;
+
+const WINS_KEY = 'wins';
+const XP_KEY = 'xp';
+
+type HomeScreen = 'home' | 'wins';
 
 function daysBetweenCalendar(a: Date, b: Date): number {
   const a0 = new Date(a.getFullYear(), a.getMonth(), a.getDate());
@@ -85,6 +93,10 @@ function findNextUnclaimedReward(
 }
 
 export default function Home() {
+  const pathname = usePathname();
+  const [screen, setScreen] = useState<HomeScreen>('home');
+  const [wins, setWins] = useState(0);
+  const [xp, setXp] = useState(0);
   const [daysLabel, setDaysLabel] = useState<string | null>(null);
   const [daysCount, setDaysCount] = useState<number | null>(null);
   const [showRewardModal, setShowRewardModal] = useState(false);
@@ -109,6 +121,20 @@ export default function Home() {
   useEffect(() => {
     syncLabelFromStorage();
   }, [syncLabelFromStorage]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || pathname !== '/') return;
+    const w = localStorage.getItem(WINS_KEY);
+    const x = localStorage.getItem(XP_KEY);
+    if (w !== null) {
+      const n = Number(w);
+      if (Number.isFinite(n)) setWins(n);
+    }
+    if (x !== null) {
+      const n = Number(x);
+      if (Number.isFinite(n)) setXp(n);
+    }
+  }, [pathname]);
 
   const evaluateRewardModal = useCallback((days: number) => {
     const claimed = readClaimedMedals();
@@ -150,27 +176,67 @@ export default function Home() {
     incrementMetric('reset_click');
     posthogCapture('reset_click');
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('days');
     localStorage.removeItem(CLAIMED_MEDALS_KEY);
-    syncLabelFromStorage();
+    localStorage.removeItem(WINS_KEY);
+    localStorage.removeItem(XP_KEY);
+    setWins(0);
+    setXp(0);
+    setShowRewardModal(false);
+    setPendingRewardLevel(null);
     setShowResetModal(false);
+    setScreen('home');
+    syncLabelFromStorage();
   }
 
   const medal =
     daysCount === null ? undefined : medalEmoji(daysCount);
-  const progressPercent =
-    daysCount === null
-      ? 0
-      : Math.min(100, Math.round((daysCount / 90) * 100));
-  const progressColorClass =
-    progressPercent <= 33
-      ? 'bg-red-500'
-      : progressPercent <= 66
-        ? 'bg-yellow-400'
-        : 'bg-green-500';
 
   return (
     <>
-      <main className="flex min-h-screen flex-col items-center justify-between p-6">
+      {screen === 'wins' ? (
+        <main className="flex min-h-screen flex-col bg-white p-6">
+          <button
+            type="button"
+            onClick={() => setScreen('home')}
+            className="inline-flex items-center gap-2 self-start rounded-lg px-1 py-2 text-gray-800 hover:bg-gray-100 hover:text-gray-950"
+          >
+            <span aria-hidden className="text-xl leading-none">
+              ←
+            </span>
+            <span className="text-base font-medium">Назад</span>
+          </button>
+
+          <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-8 px-2 text-center">
+            <h1 className="text-lg font-medium text-gray-900">
+              Количество ваших побед
+            </h1>
+            <p className="text-5xl font-bold tabular-nums text-gray-950 sm:text-6xl">
+              {wins} <span aria-hidden>🔥</span>
+            </p>
+            <XpLevelBlock xp={xp} variant="stats" />
+            <div className="mt-6 w-full">
+              <p className="text-center text-sm font-normal text-gray-500">
+                Собранный опыт
+              </p>
+              <p className="mt-2 text-center text-2xl font-semibold text-gray-900">
+                {xp} xp
+              </p>
+            </div>
+          </div>
+        </main>
+      ) : (
+      <main className="relative flex min-h-screen flex-col items-center justify-between p-6">
+        <button
+          type="button"
+          onClick={() => setScreen('wins')}
+          className="absolute right-4 top-4 flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-gray-900 hover:bg-gray-100"
+          aria-label={`Побед: ${wins}`}
+        >
+          <span className="text-lg font-semibold tabular-nums">{wins}</span>
+          <span aria-hidden>🔥</span>
+        </button>
+
         {/* Header */}
         <div className="w-full self-start pl-3 pt-3 text-left text-2xl font-bold">
           Reset
@@ -211,22 +277,34 @@ export default function Home() {
             Сбросить
           </button>
 
-          <div className="mt-6 w-full text-center">
-            <p className="text-base font-medium text-gray-900">
-              Переключение мозга
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <div className="h-3 flex-1 rounded-full bg-gray-200">
-                <div
-                  className={`h-3 rounded-full ${progressColorClass}`}
-                  style={{ width: `${progressPercent}%` }}
-                />
+          {(() => {
+            const days = daysCount ?? 0;
+            const brainPercent = Math.min((days / 90) * 100, 100);
+            return (
+              <div className="mt-6 flex flex-col items-center">
+                <div className="mb-1 text-sm text-gray-500">
+                  Переключение мозга
+                </div>
+
+                <div className="w-full max-w-xs">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full transition-all duration-500"
+                      style={{
+                        width: `${brainPercent}%`,
+                        background:
+                          'linear-gradient(to right, red, yellow, green)',
+                      }}
+                    />
+                  </div>
+
+                  <div className="mt-1 text-center text-xs text-gray-600">
+                    {Math.floor(brainPercent)}%
+                  </div>
+                </div>
               </div>
-              <span className="min-w-11 text-sm font-medium text-gray-700">
-                {progressPercent}%
-              </span>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         {/* Тревожная кнопка */}
@@ -242,6 +320,7 @@ export default function Home() {
           Тревожная кнопка
         </Link>
       </main>
+      )}
 
       {showRewardModal && pendingRewardLevel !== null && (
         <div

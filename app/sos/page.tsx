@@ -8,6 +8,8 @@ import { trackOnce } from '@/lib/analytics';
 import { posthogCapture } from '@/lib/posthogCapture';
 
 const DURATION_SECONDS = 90;
+const WINS_KEY = 'wins';
+const XP_KEY = 'xp';
 
 const plex = IBM_Plex_Sans({
   subsets: ['latin', 'cyrillic'],
@@ -52,9 +54,39 @@ function getTextPhase(timeLeft: number): 1 | 2 | 3 {
 export default function SosPage() {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState(DURATION_SECONDS);
+  const [wins, setWins] = useState(0);
+  const [xp, setXp] = useState(0);
+  const [showReward, setShowReward] = useState(false);
   const hasTrackedSosCompletedRef = useRef(false);
+  const rewardGivenRef = useRef(false);
+  const [statsHydrated, setStatsHydrated] = useState(false);
   const { title, subtitle } = getDynamicText(timeLeft);
   const textPhase = getTextPhase(timeLeft);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const savedWins = localStorage.getItem(WINS_KEY);
+    const savedXp = localStorage.getItem(XP_KEY);
+    if (savedWins !== null) {
+      const n = Number(savedWins);
+      if (Number.isFinite(n)) setWins(n);
+    }
+    if (savedXp !== null) {
+      const n = Number(savedXp);
+      if (Number.isFinite(n)) setXp(n);
+    }
+    setStatsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !statsHydrated) return;
+    localStorage.setItem(WINS_KEY, wins.toString());
+  }, [wins, statsHydrated]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !statsHydrated) return;
+    localStorage.setItem(XP_KEY, xp.toString());
+  }, [xp, statsHydrated]);
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -73,6 +105,13 @@ export default function SosPage() {
     hasTrackedSosCompletedRef.current = true;
     trackOnce('sos_completed');
     posthogCapture('sos_completed');
+  }, [timeLeft]);
+
+  useEffect(() => {
+    if (timeLeft !== 0) return;
+    if (rewardGivenRef.current) return;
+    rewardGivenRef.current = true;
+    setShowReward(true);
   }, [timeLeft]);
 
   return (
@@ -111,6 +150,43 @@ export default function SosPage() {
           {subtitle}
         </p>
       </div>
+
+      {showReward ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sos-reward-title"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <p
+              id="sos-reward-title"
+              className="text-center text-base font-medium leading-relaxed text-gray-900"
+            >
+              Молодец. Ты стал ещё опытней в контроле над собой.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                const nextWins = wins + 1;
+                const nextXp = xp + 16;
+                setWins(nextWins);
+                setXp(nextXp);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem(WINS_KEY, String(nextWins));
+                  localStorage.setItem(XP_KEY, String(nextXp));
+                }
+                setShowReward(false);
+                rewardGivenRef.current = false;
+                router.replace('/');
+              }}
+              className="mt-8 w-full min-h-14 rounded-xl bg-gray-900 py-4 text-base font-semibold text-white transition hover:bg-gray-800"
+            >
+              Собрать опыт
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
