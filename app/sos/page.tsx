@@ -10,6 +10,20 @@ import { posthogCapture } from '@/lib/posthogCapture';
 const DURATION_SECONDS = 90;
 const WINS_KEY = 'wins';
 const XP_KEY = 'xp';
+const TRIGGERS = [
+  'Скука',
+  'Стресс',
+  'Тревога',
+  'Одиночество',
+  'Усталость',
+  'Прокрастинация (избегаю задачи)',
+  'Привычка (автопилот)',
+  'Желание удовольствия',
+  'Раздражение',
+  'Печаль',
+  'Социальный триггер (контент, картинки)',
+  'Перед сном',
+] as const;
 
 const plex = IBM_Plex_Sans({
   subsets: ['latin', 'cyrillic'],
@@ -53,10 +67,12 @@ function getTextPhase(timeLeft: number): 1 | 2 | 3 {
 
 export default function SosPage() {
   const router = useRouter();
+  const [screen, setScreen] = useState<'trigger' | 'timer'>('trigger');
   const [timeLeft, setTimeLeft] = useState(DURATION_SECONDS);
   const [wins, setWins] = useState(0);
   const [xp, setXp] = useState(0);
   const [showReward, setShowReward] = useState(false);
+  const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
   const hasTrackedSosCompletedRef = useRef(false);
   const rewardGivenRef = useRef(false);
   const [statsHydrated, setStatsHydrated] = useState(false);
@@ -89,6 +105,7 @@ export default function SosPage() {
   }, [xp, statsHydrated]);
 
   useEffect(() => {
+    if (screen !== 'timer') return;
     if (timeLeft <= 0) return;
     const id = setInterval(() => {
       setTimeLeft((prev) => {
@@ -97,59 +114,124 @@ export default function SosPage() {
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [timeLeft]);
+  }, [screen, timeLeft]);
 
   useEffect(() => {
+    if (screen !== 'timer') return;
     if (timeLeft !== 0) return;
     if (hasTrackedSosCompletedRef.current) return;
     hasTrackedSosCompletedRef.current = true;
     trackOnce('sos_completed');
     posthogCapture('sos_completed');
-  }, [timeLeft]);
+  }, [screen, timeLeft]);
 
   useEffect(() => {
+    if (screen !== 'timer') return;
     if (timeLeft !== 0) return;
     if (rewardGivenRef.current) return;
     rewardGivenRef.current = true;
     setShowReward(true);
-  }, [timeLeft]);
+  }, [screen, timeLeft]);
+
+  function toggleTrigger(trigger: string) {
+    setSelectedTriggers((prev) => {
+      if (prev.includes(trigger)) {
+        return prev.filter((item) => item !== trigger);
+      }
+      return [...prev, trigger];
+    });
+  }
 
   return (
     <main
       className={`${plex.className} flex min-h-screen flex-col bg-gray-50 px-4 pb-8 pt-4`}
     >
-      <div className="w-full max-w-md self-start px-1 pt-2">
-        <button
-          type="button"
-          onClick={() => router.push('/')}
-          className="inline-flex items-center gap-2 rounded-lg px-1 py-2 text-gray-800 hover:bg-gray-100 hover:text-gray-950"
-        >
-          <span aria-hidden className="text-xl leading-none">
-            ←
-          </span>
-          <span className="text-base font-medium">Назад</span>
-        </button>
+      <div className="w-full max-w-lg self-start px-1 pt-2">
+        {screen === 'trigger' ? (
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="inline-flex items-center gap-2 rounded-lg px-1 py-2 text-gray-800 hover:bg-gray-100 hover:text-gray-950"
+          >
+            <span aria-hidden className="text-xl leading-none">
+              ←
+            </span>
+            <span className="text-base font-medium">Назад</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="inline-flex items-center gap-2 rounded-lg px-1 py-2 text-gray-800 hover:bg-gray-100 hover:text-gray-950"
+          >
+            <span aria-hidden className="text-xl leading-none">
+              ←
+            </span>
+            <span className="text-base font-medium">Назад</span>
+          </button>
+        )}
       </div>
 
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 px-4 py-8 text-center">
-        <p
-          key={`sos-title-${textPhase}`}
-          className="max-w-md text-balance text-lg font-bold uppercase leading-snug text-gray-900 transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
-        >
-          {title}
-        </p>
+      {screen === 'trigger' ? (
+        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 py-8">
+          <h1 className="text-xl font-semibold leading-snug text-gray-900 sm:text-2xl">
+            Что вызвало импульс и что ты сейчас чувствуешь?
+          </h1>
+          <p className="mb-6 mt-2 text-sm text-gray-500">
+            Это помогает ослабить импульс
+          </p>
 
-        <p className="text-5xl font-bold tabular-nums tracking-tight text-gray-950 sm:text-6xl">
-          {formatTimer(timeLeft)}
-        </p>
+          <div className="flex flex-1 flex-col gap-3">
+            {TRIGGERS.map((trigger) => {
+              const checked = selectedTriggers.includes(trigger);
+              return (
+                <label
+                  key={trigger}
+                  className="flex cursor-pointer items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 transition hover:border-gray-300"
+                >
+                  <span>{trigger}</span>
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-gray-900"
+                    checked={checked}
+                    onChange={() => toggleTrigger(trigger)}
+                  />
+                </label>
+              );
+            })}
+          </div>
 
-        <p
-          key={`sos-sub-${textPhase}`}
-          className="max-w-md whitespace-pre-line text-base font-medium leading-snug text-gray-700 transition-opacity duration-300 motion-safe:animate-sos-phase-text"
-        >
-          {subtitle}
-        </p>
-      </div>
+          {selectedTriggers.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setScreen('timer')}
+              className="mt-6 min-h-14 w-full rounded-xl bg-gray-900 py-4 text-base font-semibold text-white transition hover:bg-gray-800"
+            >
+              Далее
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 px-4 py-8 text-center">
+          <p
+            key={`sos-title-${textPhase}`}
+            className="max-w-md text-balance text-lg font-bold uppercase leading-snug text-gray-900 transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
+          >
+            {title}
+          </p>
+
+          <p className="text-5xl font-bold tabular-nums tracking-tight text-gray-950 sm:text-6xl">
+            {formatTimer(timeLeft)}
+          </p>
+
+          <p
+            key={`sos-sub-${textPhase}`}
+            className="max-w-md whitespace-pre-line text-base font-medium leading-snug text-gray-700 transition-opacity duration-300 motion-safe:animate-sos-phase-text"
+          >
+            {subtitle}
+          </p>
+        </div>
+      )}
 
       {showReward ? (
         <div
