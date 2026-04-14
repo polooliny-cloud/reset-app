@@ -1,10 +1,10 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { trackOnce } from '@/lib/analytics';
-import { posthogCapture, posthogCaptureOnce } from '@/lib/posthogCapture';
 import { ONBOARDING_COMPLETED_KEY } from '@/lib/onboarding';
 
 const steps = [
@@ -37,22 +37,53 @@ const steps = [
   },
 ];
 
+/** Живёт между mount/unmount в Strict Mode — один раз за загрузку страницы. */
+let onboardingStartPosted = false;
+let lastOnboardingStepPosted: number | null = null;
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
+  const onboardingCompleteSent = useRef(false);
 
   useEffect(() => {
+    if (onboardingStartPosted) return;
+    onboardingStartPosted = true;
     trackOnce('onboarding_start');
-    posthogCaptureOnce('onboarding_start');
+    try {
+      posthog.capture('onboarding_start');
+    } catch {
+      // ignore
+    }
   }, []);
+
+  useEffect(() => {
+    if (lastOnboardingStepPosted === currentStep) return;
+    lastOnboardingStepPosted = currentStep;
+    try {
+      posthog.capture('onboarding_step', { step: currentStep });
+    } catch {
+      // ignore
+    }
+  }, [currentStep]);
 
   const isLast = currentStep === steps.length - 1;
   const step = steps[currentStep];
 
   function finish() {
+    if (onboardingCompleteSent.current) return;
+    onboardingCompleteSent.current = true;
     trackOnce('onboarding_complete');
-    posthogCapture('onboarding_complete');
-    localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+    try {
+      posthog.capture('onboarding_complete');
+    } catch {
+      // ignore
+    }
+    try {
+      localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+    } catch {
+      // ignore
+    }
     router.replace('/');
   }
 

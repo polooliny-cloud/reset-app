@@ -18,10 +18,13 @@ export function posthogCaptureOnce(event: string) {
   }
 }
 
-export function posthogCapture(event: string) {
+export function posthogCapture(
+  event: string,
+  properties?: Record<string, unknown>,
+) {
   if (!isBrowser()) return;
   try {
-    posthog.capture(event);
+    posthog.capture(event, properties);
   } catch {
     // ignore
   }

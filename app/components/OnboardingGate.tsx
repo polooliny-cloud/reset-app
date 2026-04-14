@@ -3,7 +3,28 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { ONBOARDING_COMPLETED_KEY } from '@/lib/onboarding';
+import {
+  ONBOARDING_COMPLETED_KEY,
+  RESET_ONBOARDING_QUERY,
+} from '@/lib/onboarding';
+
+/** Сброс флага + чистый URL; reload сбрасывает клиентские модули (аналитика онбординга). */
+function applyResetOnboardingFromUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get(RESET_ONBOARDING_QUERY) !== 'true') return false;
+    localStorage.removeItem(ONBOARDING_COMPLETED_KEY);
+    url.searchParams.delete(RESET_ONBOARDING_QUERY);
+    const nextSearch = url.searchParams.toString();
+    const path = `${url.pathname}${nextSearch ? `?${nextSearch}` : ''}${url.hash}`;
+    window.history.replaceState(null, '', path);
+    window.location.reload();
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -11,9 +32,14 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    const done =
-      typeof window !== 'undefined' &&
-      localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
+    if (applyResetOnboardingFromUrl()) return;
+
+    let done = false;
+    try {
+      done = localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
+    } catch {
+      done = false;
+    }
 
     if (pathname === '/onboarding') {
       if (done) {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { AnalyticsAppMount } from "./components/AnalyticsAppMount";
+import { OnboardingDevReset } from "./components/OnboardingDevReset";
 import { OnboardingGate } from "./components/OnboardingGate";
 import { PostHogProvider } from "./components/PostHogProvider";
 import "./globals.css";
@@ -47,6 +48,7 @@ export default function RootLayout({
         <PostHogProvider>
           <AnalyticsAppMount />
           <OnboardingGate>{children}</OnboardingGate>
+          <OnboardingDevReset />
         </PostHogProvider>
       </body>
     </html>
