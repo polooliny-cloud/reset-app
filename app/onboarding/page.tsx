@@ -1,11 +1,10 @@
 'use client';
-
-import posthog from 'posthog-js';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { trackOnce } from '@/lib/analytics';
 import { ONBOARDING_COMPLETED_KEY } from '@/lib/onboarding';
+import { posthogCapture } from '@/lib/posthogCapture';
 
 const steps = [
   {
@@ -50,21 +49,13 @@ export default function OnboardingPage() {
     if (onboardingStartPosted) return;
     onboardingStartPosted = true;
     trackOnce('onboarding_start');
-    try {
-      posthog.capture('onboarding_start');
-    } catch {
-      // ignore
-    }
+    posthogCapture('onboarding_start');
   }, []);
 
   useEffect(() => {
     if (lastOnboardingStepPosted === currentStep) return;
     lastOnboardingStepPosted = currentStep;
-    try {
-      posthog.capture('onboarding_step', { step: currentStep });
-    } catch {
-      // ignore
-    }
+    posthogCapture('onboarding_step', { step: currentStep });
   }, [currentStep]);
 
   const isLast = currentStep === steps.length - 1;
@@ -74,11 +65,7 @@ export default function OnboardingPage() {
     if (onboardingCompleteSent.current) return;
     onboardingCompleteSent.current = true;
     trackOnce('onboarding_complete');
-    try {
-      posthog.capture('onboarding_complete');
-    } catch {
-      // ignore
-    }
+    posthogCapture('onboarding_complete');
     try {
       localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
     } catch {
