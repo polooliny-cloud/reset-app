@@ -8,8 +8,18 @@ import { trackOnce } from '@/lib/analytics';
 import { posthogCapture } from '@/lib/posthogCapture';
 
 const DURATION_SECONDS = 90;
+const MESSAGE_INTERVAL_SECONDS = 15;
 const WINS_KEY = 'wins';
 const XP_KEY = 'xp';
+const TIMER_MESSAGES = [
+  'Снова это желание…\nСейчас мозг ждёт привычное вознаграждение.',
+  'Раньше ты бы просто сделал это…\nНо сейчас ты ломаешь этот сценарий.',
+  'Сделай глубокий вдох,\nзадержи дыхание\nи медленно выдохни.',
+  'Тело уже успокаивается.\nИ желание начинает отпускать.',
+  'Прошла уже минута.\nЭто значит, что ты сам сделал свой выбор.',
+  'Ты справился!!!\nЗапомни это состояние — через час ты почувствуешь гордость за себя.',
+] as const;
+const LAST_TIMER_MESSAGE_NOTE = 'Фух, хорошо, что я тогда не сдался';
 const TRIGGERS = [
   'Скука',
   'Стресс',
@@ -38,31 +48,12 @@ function formatTimer(totalSeconds: number): string {
   return `${mm}:${ss}`;
 }
 
-function getDynamicText(timeLeft: number): { title: string; subtitle: string } {
-  if (timeLeft > 60) {
-    return {
-      title: 'ОСТАНОВИСЬ. НЕ ДЕЛАЙ ЭТОГО.',
-      subtitle: 'СЕЙЧАС ЭТО ПРОСТО ИМПУЛЬС\nОН ПРОЙДЁТ',
-    };
-  }
-
-  if (timeLeft > 30) {
-    return {
-      title: 'ТЫ СЕЙЧАС ТЕРЯЕШЬ КОНТРОЛЬ',
-      subtitle: 'НЕ СЛИВАЙ СВОЙ ПРОГРЕСС\nРАДИ НЕСКОЛЬКИХ СЕКУНД',
-    };
-  }
-
-  return {
-    title: 'ОСТАЛОСЬ СОВСЕМ НЕМНОГО',
-    subtitle: 'ДОЖДИСЬ КОНЦА\nТЫ УЖЕ СПРАВЛЯЕШЬСЯ',
-  };
-}
-
-function getTextPhase(timeLeft: number): 1 | 2 | 3 {
-  if (timeLeft > 60) return 1;
-  if (timeLeft > 30) return 2;
-  return 3;
+function getTimerMessageIndex(timeLeft: number): number {
+  const elapsedSeconds = DURATION_SECONDS - timeLeft;
+  return Math.min(
+    Math.floor(elapsedSeconds / MESSAGE_INTERVAL_SECONDS),
+    TIMER_MESSAGES.length - 1,
+  );
 }
 
 export default function SosPage() {
@@ -76,8 +67,9 @@ export default function SosPage() {
   const hasTrackedSosCompletedRef = useRef(false);
   const rewardGivenRef = useRef(false);
   const [statsHydrated, setStatsHydrated] = useState(false);
-  const { title, subtitle } = getDynamicText(timeLeft);
-  const textPhase = getTextPhase(timeLeft);
+  const timerMessageIndex = getTimerMessageIndex(timeLeft);
+  const timerMessage = TIMER_MESSAGES[timerMessageIndex];
+  const isLastTimerMessage = timerMessageIndex === TIMER_MESSAGES.length - 1;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -204,7 +196,11 @@ export default function SosPage() {
           {selectedTriggers.length > 0 ? (
             <button
               type="button"
-              onClick={() => setScreen('timer')}
+              onClick={() => {
+                setTimeLeft(DURATION_SECONDS);
+                setShowReward(false);
+                setScreen('timer');
+              }}
               className="mt-6 min-h-14 w-full rounded-xl bg-gray-900 py-4 text-base font-semibold text-white transition hover:bg-gray-800"
             >
               Далее
@@ -214,21 +210,18 @@ export default function SosPage() {
       ) : (
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 px-4 py-8 text-center">
           <p
-            key={`sos-title-${textPhase}`}
-            className="max-w-md text-balance text-lg font-bold uppercase leading-snug text-gray-900 transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
+            key={`sos-message-${timerMessageIndex}`}
+            className="max-w-md whitespace-pre-line text-lg font-bold leading-snug text-gray-900 transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
           >
-            {title}
+            {timerMessage}
           </p>
+
+          {isLastTimerMessage ? (
+            <p className="mt-2 text-sm text-gray-500">{LAST_TIMER_MESSAGE_NOTE}</p>
+          ) : null}
 
           <p className="text-5xl font-bold tabular-nums tracking-tight text-gray-950 sm:text-6xl">
             {formatTimer(timeLeft)}
-          </p>
-
-          <p
-            key={`sos-sub-${textPhase}`}
-            className="max-w-md whitespace-pre-line text-base font-medium leading-snug text-gray-700 transition-opacity duration-300 motion-safe:animate-sos-phase-text"
-          >
-            {subtitle}
           </p>
         </div>
       )}
