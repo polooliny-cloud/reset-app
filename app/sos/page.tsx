@@ -136,14 +136,14 @@ export default function SosPage() {
 
   return (
     <main
-      className={`${plex.className} flex min-h-screen flex-col bg-gray-50 px-4 pb-8 pt-4`}
+      className={`${plex.className} flex min-h-screen flex-col bg-[#0B0B0C] px-4 pb-8 pt-4 text-white`}
     >
       <div className="w-full max-w-lg self-start px-1 pt-2">
         {screen === 'trigger' ? (
           <button
             type="button"
             onClick={() => router.push('/')}
-            className="inline-flex items-center gap-2 rounded-lg px-1 py-2 text-gray-800 hover:bg-gray-100 hover:text-gray-950"
+            className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-[#9A9AA0] transition-colors duration-200 ease-out hover:bg-[#1C1C1F] hover:text-white"
           >
             <span aria-hidden className="text-xl leading-none">
               ←
@@ -154,7 +154,7 @@ export default function SosPage() {
           <button
             type="button"
             onClick={() => router.push('/')}
-            className="inline-flex items-center gap-2 rounded-lg px-1 py-2 text-gray-800 hover:bg-gray-100 hover:text-gray-950"
+            className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-[#9A9AA0] transition-colors duration-200 ease-out hover:bg-[#1C1C1F] hover:text-white"
           >
             <span aria-hidden className="text-xl leading-none">
               ←
@@ -165,12 +165,12 @@ export default function SosPage() {
       </div>
 
       {screen === 'trigger' ? (
-        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 py-8">
-          <h1 className="text-xl font-semibold leading-snug text-gray-900 sm:text-2xl">
-            Что вызвало импульс и что ты сейчас чувствуешь?
+        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-2 pb-28 pt-8">
+          <h1 className="text-2xl font-semibold leading-snug text-white">
+            Что сейчас происходит?
           </h1>
-          <p className="mb-6 mt-2 text-sm text-gray-500">
-            Это помогает ослабить импульс
+          <p className="mb-6 mt-2 text-sm text-[#9A9AA0]">
+            Осознание ослабляет импульс
           </p>
 
           <div className="flex flex-1 flex-col gap-3">
@@ -179,50 +179,55 @@ export default function SosPage() {
               return (
                 <label
                   key={trigger}
-                  className="flex cursor-pointer items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 transition hover:border-gray-300"
+                  className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition duration-200 ease-out ${
+                    checked
+                      ? 'border-amber-300/40 bg-[#1C1C1F] text-white'
+                      : 'border-white/10 bg-[#151517] text-[#D4D4D8] hover:bg-[#1A1A1D]'
+                  }`}
                 >
-                  <span>{trigger}</span>
                   <input
                     type="checkbox"
-                    className="h-4 w-4 accent-gray-900"
+                    className="h-4 w-4 accent-amber-400"
                     checked={checked}
                     onChange={() => toggleTrigger(trigger)}
                   />
+                  <span>{trigger}</span>
                 </label>
               );
             })}
           </div>
 
           {selectedTriggers.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => {
-                setTimeLeft(DURATION_SECONDS);
-                setShowReward(false);
-                setScreen('timer');
-              }}
-              className="mt-6 min-h-14 w-full rounded-xl bg-gray-900 py-4 text-base font-semibold text-white transition hover:bg-gray-800"
-            >
-              Далее
-            </button>
+            <div className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-lg px-4 pb-6 pt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setTimeLeft(DURATION_SECONDS);
+                  setShowReward(false);
+                  setScreen('timer');
+                }}
+                className="min-h-14 w-full rounded-3xl border border-amber-300/25 bg-[#1C1C1F] py-4 text-base font-semibold text-white shadow-[0_16px_36px_rgba(0,0,0,0.4)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+              >
+                Далее
+              </button>
+            </div>
           ) : null}
         </div>
       ) : (
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 px-4 py-8 text-center">
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-7 px-4 py-10 text-center [background:radial-gradient(ellipse_at_center,rgba(245,158,11,0.10)_0%,rgba(11,11,12,0)_65%)]">
+          <p className="text-6xl font-bold tabular-nums tracking-tight text-white sm:text-7xl">
+            {formatTimer(timeLeft)}
+          </p>
           <p
             key={`sos-message-${timerMessageIndex}`}
-            className="max-w-md whitespace-pre-line text-lg font-bold leading-snug text-gray-900 transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
+            className="min-h-[5.5rem] max-w-md whitespace-pre-line text-lg font-medium leading-relaxed text-[#D4D4D8] transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
           >
             {timerMessage}
           </p>
 
           {isLastTimerMessage ? (
-            <p className="mt-2 text-sm text-gray-500">{LAST_TIMER_MESSAGE_NOTE}</p>
+            <p className="mt-1 text-sm text-[#9A9AA0]">{LAST_TIMER_MESSAGE_NOTE}</p>
           ) : null}
-
-          <p className="text-5xl font-bold tabular-nums tracking-tight text-gray-950 sm:text-6xl">
-            {formatTimer(timeLeft)}
-          </p>
         </div>
       )}
 
@@ -233,10 +238,10 @@ export default function SosPage() {
           aria-modal="true"
           aria-labelledby="sos-reward-title"
         >
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
             <p
               id="sos-reward-title"
-              className="text-center text-base font-medium leading-relaxed text-gray-900"
+              className="text-center text-base font-medium leading-relaxed text-white"
             >
               Молодец. Ты стал ещё опытней в контроле над собой.
             </p>
@@ -255,7 +260,7 @@ export default function SosPage() {
                 rewardGivenRef.current = false;
                 router.replace('/');
               }}
-              className="mt-8 w-full min-h-14 rounded-xl bg-gray-900 py-4 text-base font-semibold text-white transition hover:bg-gray-800"
+              className="mt-8 w-full min-h-14 rounded-2xl bg-[#1C1C1F] py-4 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#242428]"
             >
               Собрать опыт
             </button>

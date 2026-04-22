@@ -195,11 +195,11 @@ export default function Home() {
   return (
     <>
       {screen === 'wins' ? (
-        <main className="flex min-h-screen flex-col bg-white p-6">
+        <main className="min-h-screen bg-[#0B0B0C] px-4 pb-8 pt-6 sm:px-6">
           <button
             type="button"
             onClick={() => setScreen('home')}
-            className="inline-flex items-center gap-2 self-start rounded-lg px-1 py-2 text-gray-800 hover:bg-gray-100 hover:text-gray-950"
+            className="inline-flex items-center gap-2 self-start rounded-xl px-2 py-2 text-[#9A9AA0] transition-colors duration-200 ease-out hover:bg-[#1C1C1F] hover:text-white"
           >
             <span aria-hidden className="text-xl leading-none">
               ←
@@ -207,118 +207,102 @@ export default function Home() {
             <span className="text-base font-medium">Назад</span>
           </button>
 
-          <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-8 px-2 text-center">
-            <h1 className="text-lg font-medium text-gray-900">
+          <div className="mx-auto mt-8 flex w-full max-w-md flex-col rounded-3xl border border-white/5 bg-[#151517] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
+            <h1 className="text-center text-lg font-medium text-[#9A9AA0]">
               Количество ваших побед
             </h1>
-            <p className="text-5xl font-bold tabular-nums text-gray-950 sm:text-6xl">
+            <p className="mt-3 text-center text-5xl font-bold tabular-nums text-white sm:text-6xl">
               {wins} <span aria-hidden>🔥</span>
             </p>
             <XpLevelBlock xp={xp} variant="stats" />
-            <div className="mt-6 w-full">
-              <p className="text-center text-sm font-normal text-gray-500">
-                Собранный опыт
+            <div className="mt-7 border-t border-white/10 pt-5">
+              <p className="text-center text-sm font-normal text-[#9A9AA0]">
+                Всего опыта
               </p>
-              <p className="mt-2 text-center text-2xl font-semibold text-gray-900">
+              <p className="mt-2 text-center text-2xl font-semibold text-white">
                 {xp} xp
               </p>
             </div>
           </div>
         </main>
       ) : (
-      <main className="relative flex min-h-screen flex-col items-center justify-between p-6">
+      <main className="relative min-h-screen bg-[#0B0B0C] px-4 pb-6 pt-5 sm:px-6">
         <button
           type="button"
           onClick={() => setScreen('wins')}
-          className="absolute right-4 top-4 flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-gray-900 hover:bg-gray-100"
+          className="absolute right-4 top-5 inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-[#1C1C1F] px-3 py-1.5 text-[#F1B45C] shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition duration-200 ease-out hover:scale-[1.02] hover:bg-[#242428] active:scale-95"
           aria-label={`Побед: ${wins}`}
         >
-          <span className="text-lg font-semibold tabular-nums">{wins}</span>
           <span aria-hidden>🔥</span>
+          <span className="text-base font-semibold tabular-nums text-white">{wins}</span>
         </button>
 
-        {/* Header */}
-        <div className="w-full self-start pl-3 pt-3 text-left text-2xl font-bold">
+        <div className="w-full pt-2 text-left text-2xl font-semibold text-white">
           Reset
         </div>
 
-        {/* Center */}
-        <div className="flex w-full max-w-md flex-col items-center">
-          <div className="mb-4 flex min-h-[5.5rem] flex-col items-center justify-center">
-            {daysCount === null ? (
-              <span className="text-6xl leading-none text-gray-300" aria-hidden>
-                …
-              </span>
-            ) : medal ? (
-              <span
-                className="text-7xl leading-none sm:text-8xl"
-                role="img"
-                aria-label="Награда"
-              >
+        <div className="mx-auto mt-10 flex w-full max-w-md flex-col">
+          <div className="flex min-h-[10rem] flex-col items-center justify-center rounded-3xl border border-white/5 bg-[#151517] px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
+            <p className="text-5xl font-bold tabular-nums tracking-tight text-white sm:text-6xl">
+              {daysCount ?? '…'}
+            </p>
+            <p className="mt-3 text-sm text-[#9A9AA0]">дней под контролем</p>
+            {medal ? (
+              <span className="mt-4 text-3xl leading-none" role="img" aria-label="Награда">
                 {medal}
               </span>
-            ) : (
-              <p className="max-w-[16rem] text-center text-base leading-snug text-gray-500">
-                Тут появятся ваши награды
-              </p>
-            )}
+            ) : null}
           </div>
-          <div className="text-center text-sm font-normal text-gray-500">
-            Вы воздерживаетесь в течение:
-          </div>
-          <div className="text-2xl font-semibold">
-            {daysLabel ?? '…'}
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowResetModal(true)}
-            className="mt-3 text-sm text-gray-600 underline underline-offset-2 hover:text-gray-900"
-          >
-            Сбросить
-          </button>
 
-          {(() => {
-            const days = daysCount ?? 0;
-            const brainPercent = Math.min((days / 90) * 100, 100);
-            return (
-              <div className="mt-6 flex flex-col items-center">
-                <div className="mb-1 text-sm text-gray-500">
-                  Переключение мозга
-                </div>
-
-                <div className="w-full max-w-xs">
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+          <div className="mt-5 rounded-3xl border border-white/5 bg-[#151517] p-5 shadow-[0_16px_36px_rgba(0,0,0,0.3)]">
+            <p className="text-base font-medium text-white">Перепрошивка привычки</p>
+            <p className="mt-1 text-sm text-[#9A9AA0]">90 дней до полной свободы</p>
+            {(() => {
+              const days = daysCount ?? 0;
+              const brainPercent = Math.min((days / 90) * 100, 100);
+              return (
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#2A2A2E]">
                     <div
-                      className="h-full transition-all duration-500"
+                      className="h-full transition-all duration-500 ease-out"
                       style={{
                         width: `${brainPercent}%`,
                         background:
-                          'linear-gradient(to right, red, yellow, green)',
+                          'linear-gradient(90deg, rgb(245 158 11), rgb(249 115 22), rgb(234 88 12))',
                       }}
                     />
                   </div>
-
-                  <div className="mt-1 text-center text-xs text-gray-600">
+                  <span className="min-w-[42px] text-right text-xs text-[#9A9AA0]">
                     {Math.floor(brainPercent)}%
-                  </div>
+                  </span>
                 </div>
-              </div>
-            );
-          })()}
-        </div>
+              );
+            })()}
+          </div>
 
-        {/* Тревожная кнопка */}
-        <Link
-          href="/sos"
-          onClick={() => {
-            trackEvent('sos_click');
-            incrementMetric('sos_click');
-            posthogCapture('sos_click');
-          }}
-          className="block w-full rounded-xl bg-red-600 px-3 py-4 text-center text-base font-bold leading-tight text-white sm:text-lg"
-        >
-          Тревожная кнопка
-        </Link>
+          <div className="mt-4 flex items-center justify-between px-1">
+            <p className="text-sm text-[#9A9AA0]">{daysLabel ?? '…'}</p>
+            <button
+              type="button"
+              onClick={() => setShowResetModal(true)}
+              className="text-sm text-[#9A9AA0] underline underline-offset-4 transition-colors duration-200 ease-out hover:text-white"
+            >
+              Сбросить
+            </button>
+          </div>
+
+          <Link
+            href="/sos"
+            onClick={() => {
+              trackEvent('sos_click');
+              incrementMetric('sos_click');
+              posthogCapture('sos_click');
+            }}
+            className="mt-8 block w-full rounded-3xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_20px_40px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+          >
+            У меня импульс
+          </Link>
+        </div>
       </main>
       )}
 
@@ -329,10 +313,10 @@ export default function Home() {
           aria-modal="true"
           aria-labelledby="reward-modal-title"
         >
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
             <p
               id="reward-modal-title"
-              className="text-center text-base font-medium text-gray-900"
+              className="text-center text-base font-medium text-white"
             >
               Поздравляем! Вы можете забрать свою награду
             </p>
@@ -342,7 +326,7 @@ export default function Home() {
             <button
               type="button"
               onClick={handleClaimReward}
-              className="w-full rounded-xl bg-gray-900 py-3 text-base font-semibold text-white transition hover:bg-gray-800"
+                className="w-full rounded-2xl bg-[#1C1C1F] py-3 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#242428]"
             >
               Забрать награду
             </button>
@@ -357,10 +341,10 @@ export default function Home() {
           aria-modal="true"
           aria-labelledby="reset-modal-title"
         >
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
             <div
               id="reset-modal-title"
-              className="text-center text-base leading-snug text-gray-900"
+              className="text-center text-base leading-snug text-white"
             >
               <p className="mb-0">Ты точно хочешь сбросить свой прогресс?</p>
               <p className="mb-0 mt-2">
@@ -371,14 +355,14 @@ export default function Home() {
               <button
                 type="button"
                 onClick={handleConfirmReset}
-                className="flex-1 rounded-xl bg-red-600 py-3 text-base font-semibold text-white transition hover:bg-red-700"
+                className="flex-1 rounded-2xl bg-[#8A3E18] py-3 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#9A4920]"
               >
                 Сбросить
               </button>
               <button
                 type="button"
                 onClick={() => setShowResetModal(false)}
-                className="flex-1 rounded-xl border border-gray-300 bg-white py-3 text-base font-semibold text-gray-900 transition hover:bg-gray-50"
+                className="flex-1 rounded-2xl border border-white/15 bg-[#1C1C1F] py-3 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#26262A]"
               >
                 Отмена
               </button>

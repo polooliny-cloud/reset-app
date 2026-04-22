@@ -6,7 +6,7 @@ import {
 } from '@/lib/progression';
 
 const barGradient =
-  'linear-gradient(to right, rgb(239 68 68), rgb(234 179 8), rgb(34 197 94))';
+  'linear-gradient(90deg, rgb(245 158 11), rgb(249 115 22), rgb(234 88 12))';
 
 type Variant = 'home' | 'stats';
 
@@ -21,16 +21,16 @@ export function XpLevelBlock({ xp, variant }: { xp: number; variant: Variant }) 
   const progressBar = (
     <div className="mx-auto mt-6 w-full max-w-xs">
       <div className="flex items-center justify-center gap-2">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#2A2A2E]">
           <div
-            className="h-full transition-all duration-500"
+            className="h-full transition-all duration-500 ease-out"
             style={{
               width: `${safePercent}%`,
               background: barGradient,
             }}
           />
         </div>
-        <div className="min-w-[36px] text-center text-xs text-gray-600">
+        <div className="min-w-[36px] text-center text-xs text-[#9A9AA0]">
           {displayPercent}%
         </div>
       </div>
@@ -40,10 +40,10 @@ export function XpLevelBlock({ xp, variant }: { xp: number; variant: Variant }) 
   if (variant === 'stats') {
     return (
       <div className="mt-6 w-full">
-        <div className="text-center text-4xl font-bold tabular-nums text-gray-950">
+        <div className="text-center text-4xl font-bold tabular-nums text-white">
           Уровень {skill.level}
         </div>
-        <div className="mt-2 px-4 text-center text-lg font-medium text-gray-900">
+        <div className="mt-2 px-4 text-center text-lg font-normal text-[#9A9AA0]">
           {skill.title}
         </div>
         {progressBar}
@@ -53,10 +53,10 @@ export function XpLevelBlock({ xp, variant }: { xp: number; variant: Variant }) 
 
   return (
     <div className="mt-6 w-full text-center">
-      <div className="mb-1 text-lg font-medium text-gray-700">
+      <div className="mb-1 text-lg font-semibold text-white">
         Уровень {skill.level}
       </div>
-      <div className="mb-3 text-lg font-medium text-gray-900">{skill.title}</div>
+      <div className="mb-3 text-base font-normal text-[#9A9AA0]">{skill.title}</div>
       {progressBar}
     </div>
   );
