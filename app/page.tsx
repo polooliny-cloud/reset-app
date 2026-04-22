@@ -10,86 +10,78 @@ import { incrementMetric, trackEvent } from '@/lib/analytics';
 import { posthogCapture } from '@/lib/posthogCapture';
 
 const STORAGE_KEY = 'myapp_start_date';
-const CLAIMED_MEDALS_KEY = 'claimedMedals';
-
-const REWARD_THRESHOLDS = [3, 7, 14, 21, 30] as const;
 
 const WINS_KEY = 'wins';
 const XP_KEY = 'xp';
 
 type HomeScreen = 'home' | 'wins';
 
-function daysBetweenCalendar(a: Date, b: Date): number {
-  const a0 = new Date(a.getFullYear(), a.getMonth(), a.getDate());
-  const b0 = new Date(b.getFullYear(), b.getMonth(), b.getDate());
-  return Math.round((b0.getTime() - a0.getTime()) / 86_400_000);
+function getDaysWord(n: number) {
+  const last = n % 10;
+  const lastTwo = n % 100;
+
+  if (lastTwo >= 11 && lastTwo <= 14) return 'дней';
+  if (last === 1) return 'день';
+  if (last >= 2 && last <= 4) return 'дня';
+  return 'дней';
 }
 
-function formatDaysRu(n: number): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${n} день`;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
-    return `${n} дня`;
-  return `${n} дней`;
+function pad(n: number) {
+  return n.toString().padStart(2, '0');
 }
 
-/** 0–2: нет эмодзи; иначе медаль по диапазону дней. */
-function medalEmoji(days: number): string | null {
-  if (days <= 2) return null;
-  if (days <= 6) return '🥉';
-  if (days <= 13) return '🥈';
-  if (days <= 20) return '🥇';
-  if (days <= 29) return '🏅';
-  return '🏆';
+function getStreakProgress(startMs: number, nowMs: number) {
+  const diff = Math.max(nowMs - startMs, 0);
+  const days = Math.floor(diff / 86_400_000);
+  const rest = diff % 86_400_000;
+  const hours = Math.floor(rest / 3_600_000);
+  const minutes = Math.floor((rest % 3_600_000) / 60_000);
+  const seconds = Math.floor((rest % 60_000) / 1000);
+
+  return {
+    days,
+    time: `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`,
+  };
 }
 
-function medalEmojiForThreshold(level: number): string {
-  switch (level) {
-    case 3:
-      return '🥉';
-    case 7:
-      return '🥈';
-    case 14:
-      return '🥇';
-    case 21:
-      return '🏅';
-    case 30:
-      return '🏆';
-    default:
-      return '🏅';
-  }
-}
+function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void }) {
+  const [days, setDays] = useState(0);
+  const [time, setTime] = useState('00:00:00');
 
-function readClaimedMedals(): number[] {
-  try {
-    const raw = localStorage.getItem(CLAIMED_MEDALS_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    const set = new Set(REWARD_THRESHOLDS);
-    return parsed.filter(
-      (x): x is number =>
-        typeof x === 'number' && Number.isInteger(x) && set.has(x as (typeof REWARD_THRESHOLDS)[number]),
-    );
-  } catch {
-    return [];
-  }
-}
+  useEffect(() => {
+    function updateClock() {
+      const nowMs = Date.now();
+      let stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) {
+        stored = new Date(nowMs).toISOString();
+        localStorage.setItem(STORAGE_KEY, stored);
+      }
+      const parsedStart = new Date(stored).getTime();
+      const startMs = Number.isFinite(parsedStart) ? parsedStart : nowMs;
+      if (!Number.isFinite(parsedStart)) {
+        localStorage.setItem(STORAGE_KEY, new Date(startMs).toISOString());
+      }
 
-function writeClaimedMedals(ids: number[]) {
-  const unique = [...new Set(ids)].sort((a, b) => a - b);
-  localStorage.setItem(CLAIMED_MEDALS_KEY, JSON.stringify(unique));
-}
+      const progress = getStreakProgress(startMs, nowMs);
+      setDays(progress.days);
+      setTime(progress.time);
+      onDaysChange(progress.days);
+    }
 
-function findNextUnclaimedReward(
-  days: number,
-  claimed: number[],
-): number | null {
-  for (const t of REWARD_THRESHOLDS) {
-    if (days >= t && !claimed.includes(t)) return t;
-  }
-  return null;
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, [onDaysChange]);
+
+  return (
+    <>
+      <p className="text-center text-6xl font-extrabold tabular-nums tracking-[0.02em] text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.12)] sm:text-7xl">
+        {days}
+      </p>
+      <p className="mt-3 text-sm text-[#9A9AA0]">дней под контролем</p>
+      <p className="mt-1 font-mono text-2xl tracking-wide text-white/90">{time}</p>
+    </>
+  );
 }
 
 export default function Home() {
@@ -97,25 +89,25 @@ export default function Home() {
   const [screen, setScreen] = useState<HomeScreen>('home');
   const [wins, setWins] = useState(0);
   const [xp, setXp] = useState(0);
-  const [daysLabel, setDaysLabel] = useState<string | null>(null);
   const [daysCount, setDaysCount] = useState<number | null>(null);
-  const [showRewardModal, setShowRewardModal] = useState(false);
-  const [pendingRewardLevel, setPendingRewardLevel] = useState<number | null>(
-    null,
-  );
   const [showResetModal, setShowResetModal] = useState(false);
 
   const syncLabelFromStorage = useCallback(() => {
-    const now = new Date();
+    const nowMs = Date.now();
     let stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) {
-      stored = now.toISOString();
+      stored = new Date(nowMs).toISOString();
       localStorage.setItem(STORAGE_KEY, stored);
     }
-    const start = new Date(stored);
-    const days = daysBetweenCalendar(start, now);
-    setDaysCount(days);
-    setDaysLabel(formatDaysRu(days));
+
+    const parsedStart = new Date(stored).getTime();
+    const startMs = Number.isFinite(parsedStart) ? parsedStart : nowMs;
+    if (!Number.isFinite(parsedStart)) {
+      localStorage.setItem(STORAGE_KEY, new Date(startMs).toISOString());
+    }
+
+    const progress = getStreakProgress(startMs, nowMs);
+    setDaysCount(progress.days);
   }, []);
 
   useEffect(() => {
@@ -136,101 +128,90 @@ export default function Home() {
     }
   }, [pathname]);
 
-  const evaluateRewardModal = useCallback((days: number) => {
-    const claimed = readClaimedMedals();
-    const next = findNextUnclaimedReward(days, claimed);
-    if (next !== null) {
-      setPendingRewardLevel(next);
-      setShowRewardModal(true);
-    } else {
-      setShowRewardModal(false);
-      setPendingRewardLevel(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (daysCount === null) return;
-    evaluateRewardModal(daysCount);
-  }, [daysCount, evaluateRewardModal]);
-
-  function handleClaimReward() {
-    if (pendingRewardLevel === null) return;
-    const claimed = readClaimedMedals();
-    if (!claimed.includes(pendingRewardLevel)) {
-      claimed.push(pendingRewardLevel);
-      writeClaimedMedals(claimed);
-    }
-    setShowRewardModal(false);
-    setPendingRewardLevel(null);
-    if (daysCount !== null) {
-      const next = findNextUnclaimedReward(daysCount, readClaimedMedals());
-      if (next !== null) {
-        setPendingRewardLevel(next);
-        setShowRewardModal(true);
-      }
-    }
-  }
-
   function handleConfirmReset() {
     trackEvent('reset_click');
     incrementMetric('reset_click');
     posthogCapture('reset_click');
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('days');
-    localStorage.removeItem(CLAIMED_MEDALS_KEY);
     localStorage.removeItem(WINS_KEY);
     localStorage.removeItem(XP_KEY);
     setWins(0);
     setXp(0);
-    setShowRewardModal(false);
-    setPendingRewardLevel(null);
     setShowResetModal(false);
     setScreen('home');
     syncLabelFromStorage();
   }
 
-  const medal =
-    daysCount === null ? undefined : medalEmoji(daysCount);
-
   return (
     <>
       {screen === 'wins' ? (
-        <main className="min-h-screen bg-[#0B0B0C] px-4 pb-8 pt-6 sm:px-6">
-          <button
-            type="button"
-            onClick={() => setScreen('home')}
-            className="inline-flex items-center gap-2 self-start rounded-xl px-2 py-2 text-[#9A9AA0] transition-colors duration-200 ease-out hover:bg-[#1C1C1F] hover:text-white"
-          >
-            <span aria-hidden className="text-xl leading-none">
-              ←
-            </span>
-            <span className="text-base font-medium">Назад</span>
-          </button>
+        <main className="relative isolate min-h-screen overflow-hidden bg-[#0B0B0C] px-4 pb-8 pt-6 sm:px-6">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{
+              background:
+                'radial-gradient(circle at 50% 50%, rgba(255, 140, 0, 0.05), transparent 68%)',
+            }}
+          />
+          <div className="relative z-10">
+            <button
+              type="button"
+              onClick={() => setScreen('home')}
+              aria-label="Назад"
+              className="inline-flex items-center justify-center self-start rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white"
+            >
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+              >
+                <path
+                  d="M15 18L9 12L15 6"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
 
-          <div className="mx-auto mt-8 flex w-full max-w-md flex-col rounded-3xl border border-white/5 bg-[#151517] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
-            <h1 className="text-center text-lg font-medium text-[#9A9AA0]">
-              Количество ваших побед
-            </h1>
-            <p className="mt-3 text-center text-5xl font-bold tabular-nums text-white sm:text-6xl">
-              {wins} <span aria-hidden>🔥</span>
-            </p>
-            <XpLevelBlock xp={xp} variant="stats" />
-            <div className="mt-7 border-t border-white/10 pt-5">
-              <p className="text-center text-sm font-normal text-[#9A9AA0]">
-                Всего опыта
+            <div className="mx-auto mt-8 flex w-full max-w-md flex-col rounded-3xl border border-white/5 bg-[#151517] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
+              <h1 className="text-center text-lg font-medium text-[#9A9AA0]">
+                Количество ваших побед
+              </h1>
+              <p className="mt-3 text-center text-5xl font-bold tabular-nums text-white sm:text-6xl">
+                {wins} <span aria-hidden>🔥</span>
               </p>
-              <p className="mt-2 text-center text-2xl font-semibold text-white">
-                {xp} xp
-              </p>
+              <XpLevelBlock xp={xp} variant="stats" />
+              <div className="mt-7 border-t border-white/10 pt-5">
+                <p className="text-center text-sm font-normal text-[#9A9AA0]">
+                  Всего опыта
+                </p>
+                <p className="mt-2 text-center text-2xl font-semibold text-white">
+                  {xp} xp
+                </p>
+              </div>
             </div>
           </div>
         </main>
       ) : (
-      <main className="relative min-h-screen bg-[#0B0B0C] px-4 pb-6 pt-5 sm:px-6">
+      <main className="relative isolate min-h-screen overflow-hidden bg-[#0B0B0C] px-4 pb-6 pt-5 sm:px-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{
+            background:
+              'radial-gradient(circle at 50% 30%, rgba(255, 140, 0, 0.08), transparent 60%)',
+          }}
+        />
+        <div className="relative z-10">
         <button
           type="button"
           onClick={() => setScreen('wins')}
-          className="absolute right-4 top-5 inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-[#1C1C1F] px-3 py-1.5 text-[#F1B45C] shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition duration-200 ease-out hover:scale-[1.02] hover:bg-[#242428] active:scale-95"
+          className="absolute right-4 top-7 sm:right-6 inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-[#1C1C1F] px-3 py-1.5 text-[#F1B45C] shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition duration-200 ease-out hover:scale-[1.02] hover:bg-[#242428] active:scale-95"
           aria-label={`Побед: ${wins}`}
         >
           <span aria-hidden>🔥</span>
@@ -243,20 +224,17 @@ export default function Home() {
 
         <div className="mx-auto mt-10 flex w-full max-w-md flex-col">
           <div className="flex min-h-[10rem] flex-col items-center justify-center rounded-3xl border border-white/5 bg-[#151517] px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
-            <p className="text-5xl font-bold tabular-nums tracking-tight text-white sm:text-6xl">
-              {daysCount ?? '…'}
-            </p>
-            <p className="mt-3 text-sm text-[#9A9AA0]">дней под контролем</p>
-            {medal ? (
-              <span className="mt-4 text-3xl leading-none" role="img" aria-label="Награда">
-                {medal}
-              </span>
-            ) : null}
+            <StreakClock onDaysChange={setDaysCount} />
           </div>
 
           <div className="mt-5 rounded-3xl border border-white/5 bg-[#151517] p-5 shadow-[0_16px_36px_rgba(0,0,0,0.3)]">
             <p className="text-base font-medium text-white">Перепрошивка привычки</p>
-            <p className="mt-1 text-sm text-[#9A9AA0]">90 дней до полной свободы</p>
+            <p className="mt-1 text-sm text-[#9A9AA0]">
+              {(() => {
+                const remainingDays = Math.max(90 - (daysCount ?? 0), 0);
+                return `${remainingDays} ${getDaysWord(remainingDays)} до полной свободы`;
+              })()}
+            </p>
             {(() => {
               const days = daysCount ?? 0;
               const brainPercent = Math.min((days / 90) * 100, 100);
@@ -281,11 +259,10 @@ export default function Home() {
           </div>
 
           <div className="mt-4 flex items-center justify-between px-1">
-            <p className="text-sm text-[#9A9AA0]">{daysLabel ?? '…'}</p>
             <button
               type="button"
               onClick={() => setShowResetModal(true)}
-              className="text-sm text-[#9A9AA0] underline underline-offset-4 transition-colors duration-200 ease-out hover:text-white"
+              className="ml-auto text-sm text-[#9A9AA0] underline underline-offset-4 transition-colors duration-200 ease-out hover:text-white"
             >
               Сбросить
             </button>
@@ -300,38 +277,11 @@ export default function Home() {
             }}
             className="mt-8 block w-full rounded-3xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_20px_40px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
           >
-            У меня импульс
+            Тревожная кнопка
           </Link>
         </div>
-      </main>
-      )}
-
-      {showRewardModal && pendingRewardLevel !== null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="reward-modal-title"
-        >
-          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
-            <p
-              id="reward-modal-title"
-              className="text-center text-base font-medium text-white"
-            >
-              Поздравляем! Вы можете забрать свою награду
-            </p>
-            <div className="my-6 flex justify-center text-7xl leading-none">
-              {medalEmojiForThreshold(pendingRewardLevel)}
-            </div>
-            <button
-              type="button"
-              onClick={handleClaimReward}
-                className="w-full rounded-2xl bg-[#1C1C1F] py-3 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#242428]"
-            >
-              Забрать награду
-            </button>
-          </div>
         </div>
+      </main>
       )}
 
       {showResetModal && (

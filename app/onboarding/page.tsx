@@ -106,9 +106,23 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={() => setCurrentStep((s) => s - 1)}
-              className="min-h-12 w-full rounded-xl border border-gray-300 bg-white px-6 py-3 text-base font-semibold text-gray-800 transition hover:bg-gray-50 sm:min-h-14 sm:w-auto"
+              aria-label="Назад"
+              className="inline-flex min-h-12 w-12 items-center justify-center self-start rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:min-h-14 sm:w-14"
             >
-              Назад
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+              >
+                <path
+                  d="M15 18L9 12L15 6"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
           ) : null}
 

@@ -136,30 +136,63 @@ export default function SosPage() {
 
   return (
     <main
-      className={`${plex.className} flex min-h-screen flex-col bg-[#0B0B0C] px-4 pb-8 pt-4 text-white`}
+      className={`${plex.className} relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-8 pt-4 text-white`}
     >
+      {screen === 'trigger' ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{
+            background:
+              'radial-gradient(circle at 50% 70%, rgba(255, 140, 0, 0.06), transparent 72%)',
+          }}
+        />
+      ) : null}
+      <div className="relative z-10">
       <div className="w-full max-w-lg self-start px-1 pt-2">
         {screen === 'trigger' ? (
           <button
             type="button"
             onClick={() => router.push('/')}
-            className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-[#9A9AA0] transition-colors duration-200 ease-out hover:bg-[#1C1C1F] hover:text-white"
+            aria-label="Назад"
+            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white"
           >
-            <span aria-hidden className="text-xl leading-none">
-              ←
-            </span>
-            <span className="text-base font-medium">Назад</span>
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+            >
+              <path
+                d="M15 18L9 12L15 6"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
         ) : (
           <button
             type="button"
             onClick={() => router.push('/')}
-            className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-[#9A9AA0] transition-colors duration-200 ease-out hover:bg-[#1C1C1F] hover:text-white"
+            aria-label="Назад"
+            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white"
           >
-            <span aria-hidden className="text-xl leading-none">
-              ←
-            </span>
-            <span className="text-base font-medium">Назад</span>
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+            >
+              <path
+                d="M15 18L9 12L15 6"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
         )}
       </div>
@@ -267,6 +300,7 @@ export default function SosPage() {
           </div>
         </div>
       ) : null}
+      </div>
     </main>
   );
 }
