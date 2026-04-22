@@ -29,9 +29,13 @@ export function isPosthogInitialized() {
   );
 }
 
+function canCapturePosthog() {
+  return isPosthogEnabled() && isPosthogInitialized();
+}
+
 /** Один раз за жизнь модуля (защита от Strict Mode / повторных эффектов). */
 export function posthogCaptureOnce(event: string) {
-  if (!isPosthogEnabled()) return;
+  if (!canCapturePosthog()) return;
   if (onceKeys.has(event)) return;
   onceKeys.add(event);
   try {
@@ -45,7 +49,7 @@ export function posthogCapture(
   event: string,
   properties?: Record<string, unknown>,
 ) {
-  if (!isPosthogEnabled()) return;
+  if (!canCapturePosthog()) return;
   try {
     posthog.capture(event, properties);
   } catch {

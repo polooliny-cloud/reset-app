@@ -8,37 +8,43 @@ import { posthogCapture } from '@/lib/posthogCapture';
 
 const steps = [
   {
+    step: 1,
+    step_name: 'welcome',
     title:
       'Ты не один.\nС этим сталкиваются тысячи парней.',
     subtitle:
       'Это не “слабость”. Это привычка, которую можно сломать.',
   },
   {
+    step: 2,
+    step_name: 'problem',
     title:
       'Ты знаешь это чувство.\nКогда “ещё чуть-чуть” — и ты уже не контролируешь себя.',
     subtitle: 'Всё происходит быстро. Почти автоматически.',
   },
   {
+    step: 3,
+    step_name: 'solution',
     title: 'Проблема не в тебе.\nПроблема — в моменте импульса.',
     subtitle: 'Если переждать его — ты сохраняешь контроль.',
   },
   {
+    step: 4,
+    step_name: 'motivation',
     title: 'Всё, что нужно —\nпереждать 60–90 секунд.',
     subtitle: 'Этого достаточно, чтобы импульс начал спадать.',
   },
   {
+    step: 5,
+    step_name: 'finish',
     title: 'Нажми “Тревожную кнопку”\nкогда станет сложно',
     subtitle: 'Таймер поможет тебе не сорваться в этот момент.',
-  },
-  {
-    title: 'Не нужно быть идеальным.\nПросто выдержи этот момент.',
-    subtitle: '',
   },
 ];
 
 /** Живёт между mount/unmount в Strict Mode — один раз за загрузку страницы. */
 let onboardingStartPosted = false;
-let lastOnboardingStepPosted: number | null = null;
+const postedOnboardingSteps = new Set<number>();
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -53,9 +59,14 @@ export default function OnboardingPage() {
   }, []);
 
   useEffect(() => {
-    if (lastOnboardingStepPosted === currentStep) return;
-    lastOnboardingStepPosted = currentStep;
-    posthogCapture('onboarding_step', { step: currentStep });
+    const current = steps[currentStep];
+    if (!current) return;
+    if (postedOnboardingSteps.has(current.step)) return;
+    postedOnboardingSteps.add(current.step);
+    posthogCapture('onboarding_step', {
+      step: current.step,
+      step_name: current.step_name,
+    });
   }, [currentStep]);
 
   const isLast = currentStep === steps.length - 1;
