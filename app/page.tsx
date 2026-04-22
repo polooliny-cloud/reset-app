@@ -15,6 +15,8 @@ const WINS_KEY = 'wins';
 const XP_KEY = 'xp';
 
 type HomeScreen = 'home' | 'wins';
+const EDGE_OFFSET = 16;
+const TOP_OFFSET = 8;
 
 function getDaysWord(n: number) {
   const last = n % 10;
@@ -91,6 +93,9 @@ export default function Home() {
   const [xp, setXp] = useState(0);
   const [daysCount, setDaysCount] = useState<number | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
+  const topInset = `calc(${TOP_OFFSET}px + env(safe-area-inset-top))`;
+  const leftInset = `calc(${EDGE_OFFSET}px + env(safe-area-inset-left))`;
+  const rightInset = `calc(${EDGE_OFFSET}px + env(safe-area-inset-right))`;
 
   const syncLabelFromStorage = useCallback(() => {
     const nowMs = Date.now();
@@ -160,7 +165,8 @@ export default function Home() {
               type="button"
               onClick={() => setScreen('home')}
               aria-label="Назад"
-              className="inline-flex items-center justify-center self-start rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white"
+              className="fixed left-4 z-50 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
+              style={{ top: 'calc(16px + env(safe-area-inset-top))' }}
             >
               <svg
                 aria-hidden
@@ -207,18 +213,22 @@ export default function Home() {
               'radial-gradient(circle at 50% 30%, rgba(255, 140, 0, 0.08), transparent 60%)',
           }}
         />
-        <div className="relative z-10">
+        <div className="relative z-10 pt-12">
         <button
           type="button"
           onClick={() => setScreen('wins')}
-          className="absolute right-4 top-7 sm:right-6 inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-[#1C1C1F] px-3 py-1.5 text-[#F1B45C] shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition duration-200 ease-out hover:scale-[1.02] hover:bg-[#242428] active:scale-95"
+          className="absolute inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-[#1C1C1F] px-3 py-1.5 text-[#F1B45C] shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition duration-200 ease-out hover:scale-[1.02] hover:bg-[#242428] active:scale-95"
+          style={{ top: topInset, right: rightInset }}
           aria-label={`Побед: ${wins}`}
         >
           <span aria-hidden>🔥</span>
           <span className="text-base font-semibold tabular-nums text-white">{wins}</span>
         </button>
 
-        <div className="w-full pt-2 text-left text-2xl font-semibold text-white">
+        <div
+          className="absolute text-left text-2xl font-semibold text-white"
+          style={{ top: topInset, left: leftInset }}
+        >
           Reset
         </div>
 
@@ -275,7 +285,7 @@ export default function Home() {
               incrementMetric('sos_click');
               posthogCapture('sos_click');
             }}
-            className="mt-8 block w-full rounded-3xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_20px_40px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+            className="mt-12 block w-full rounded-3xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_20px_40px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
           >
             Тревожная кнопка
           </Link>

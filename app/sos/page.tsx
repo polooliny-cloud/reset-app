@@ -149,53 +149,28 @@ export default function SosPage() {
         />
       ) : null}
       <div className="relative z-10">
-      <div className="w-full max-w-lg self-start px-1 pt-2">
-        {screen === 'trigger' ? (
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            aria-label="Назад"
-            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white"
-          >
-            <svg
-              aria-hidden
-              viewBox="0 0 24 24"
-              className="h-5 w-5"
-              fill="none"
-            >
-              <path
-                d="M15 18L9 12L15 6"
-                stroke="currentColor"
-                strokeWidth="1.9"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            aria-label="Назад"
-            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white"
-          >
-            <svg
-              aria-hidden
-              viewBox="0 0 24 24"
-              className="h-5 w-5"
-              fill="none"
-            >
-              <path
-                d="M15 18L9 12L15 6"
-                stroke="currentColor"
-                strokeWidth="1.9"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={() => router.push('/')}
+        aria-label="Назад"
+        className="fixed left-4 z-50 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
+        style={{ top: 'calc(16px + env(safe-area-inset-top))' }}
+      >
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          className="h-5 w-5"
+          fill="none"
+        >
+          <path
+            d="M15 18L9 12L15 6"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
 
       {screen === 'trigger' ? (
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-2 pb-28 pt-8">
