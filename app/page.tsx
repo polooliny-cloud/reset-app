@@ -8,6 +8,7 @@ import { XpLevelBlock } from './components/XpLevelBlock';
 
 import { incrementMetric, trackEvent } from '@/lib/analytics';
 import { posthogCapture } from '@/lib/posthogCapture';
+import { getDaysWord } from '@/lib/utils';
 
 const STORAGE_KEY = 'myapp_start_date';
 
@@ -17,16 +18,6 @@ const XP_KEY = 'xp';
 type HomeScreen = 'home' | 'wins';
 const EDGE_OFFSET = 16;
 const TOP_OFFSET = 8;
-
-function getDaysWord(n: number) {
-  const last = n % 10;
-  const lastTwo = n % 100;
-
-  if (lastTwo >= 11 && lastTwo <= 14) return 'дней';
-  if (last === 1) return 'день';
-  if (last >= 2 && last <= 4) return 'дня';
-  return 'дней';
-}
 
 function pad(n: number) {
   return n.toString().padStart(2, '0');
@@ -80,7 +71,9 @@ function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void })
       <p className="text-center text-6xl font-extrabold tabular-nums tracking-[0.02em] text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.12)] sm:text-7xl">
         {days}
       </p>
-      <p className="mt-3 text-sm text-[#9A9AA0]">дней под контролем</p>
+      <p className="mt-3 text-sm text-[#9A9AA0]">
+        {getDaysWord(days)} под контролем
+      </p>
       <p className="mt-1 font-mono text-2xl tracking-wide text-white/90">{time}</p>
     </>
   );
@@ -151,7 +144,7 @@ export default function Home() {
   return (
     <>
       {screen === 'wins' ? (
-        <main className="relative isolate min-h-screen overflow-hidden bg-[#0B0B0C] px-4 pb-8 pt-6 sm:px-6">
+        <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-8 pt-6 sm:px-6">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 z-0"
@@ -160,7 +153,7 @@ export default function Home() {
                 'radial-gradient(circle at 50% 50%, rgba(255, 140, 0, 0.05), transparent 68%)',
             }}
           />
-          <div className="relative z-10">
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center pt-10">
             <button
               type="button"
               onClick={() => setScreen('home')}
@@ -184,7 +177,7 @@ export default function Home() {
               </svg>
             </button>
 
-            <div className="mx-auto mt-8 flex w-full max-w-md flex-col rounded-3xl border border-white/5 bg-[#151517] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
+            <div className="mx-auto flex w-full max-w-md flex-col rounded-3xl border border-white/5 bg-[#151517] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
               <h1 className="text-center text-lg font-medium text-[#9A9AA0]">
                 Количество ваших побед
               </h1>
@@ -204,7 +197,7 @@ export default function Home() {
           </div>
         </main>
       ) : (
-      <main className="relative isolate min-h-screen overflow-hidden bg-[#0B0B0C] px-4 pb-6 pt-5 sm:px-6">
+      <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0B0B0C] px-4 pt-5 pb-6 sm:px-6">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 z-0"
@@ -213,7 +206,7 @@ export default function Home() {
               'radial-gradient(circle at 50% 30%, rgba(255, 140, 0, 0.08), transparent 60%)',
           }}
         />
-        <div className="relative z-10 pt-12">
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-12">
         <button
           type="button"
           onClick={() => setScreen('wins')}
@@ -232,7 +225,7 @@ export default function Home() {
           Reset
         </div>
 
-        <div className="mx-auto mt-10 flex w-full max-w-md flex-col">
+        <div className="mx-auto mt-10 flex w-full max-w-md flex-1 flex-col pt-8">
           <div className="flex min-h-[10rem] flex-col items-center justify-center rounded-3xl border border-white/5 bg-[#151517] px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
             <StreakClock onDaysChange={setDaysCount} />
           </div>
@@ -278,17 +271,19 @@ export default function Home() {
             </button>
           </div>
 
-          <Link
-            href="/sos"
-            onClick={() => {
-              trackEvent('sos_click');
-              incrementMetric('sos_click');
-              posthogCapture('sos_click');
-            }}
-            className="mt-12 block w-full rounded-3xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_20px_40px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
-          >
-            Тревожная кнопка
-          </Link>
+          <div className="mt-auto w-full pb-[calc(32px+env(safe-area-inset-bottom))] pt-6">
+            <Link
+              href="/sos"
+              onClick={() => {
+                trackEvent('sos_click');
+                incrementMetric('sos_click');
+                posthogCapture('sos_click');
+              }}
+              className="block w-full rounded-3xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_20px_40px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+            >
+              Тревожная кнопка
+            </Link>
+          </div>
         </div>
         </div>
       </main>

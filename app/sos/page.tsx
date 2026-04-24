@@ -173,7 +173,7 @@ export default function SosPage() {
       </button>
 
       {screen === 'trigger' ? (
-        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-2 pb-28 pt-8">
+        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-2 pb-28 pt-[calc(64px+env(safe-area-inset-top))]">
           <h1 className="text-2xl font-semibold leading-snug text-white">
             Что сейчас происходит?
           </h1>
@@ -222,20 +222,33 @@ export default function SosPage() {
           ) : null}
         </div>
       ) : (
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-7 px-4 py-10 text-center [background:radial-gradient(ellipse_at_center,rgba(245,158,11,0.10)_0%,rgba(11,11,12,0)_65%)]">
-          <p className="text-6xl font-bold tabular-nums tracking-tight text-white sm:text-7xl">
-            {formatTimer(timeLeft)}
-          </p>
-          <p
-            key={`sos-message-${timerMessageIndex}`}
-            className="min-h-[5.5rem] max-w-md whitespace-pre-line text-lg font-medium leading-relaxed text-[#D4D4D8] transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
-          >
-            {timerMessage}
-          </p>
-
-          {isLastTimerMessage ? (
-            <p className="mt-1 text-sm text-[#9A9AA0]">{LAST_TIMER_MESSAGE_NOTE}</p>
-          ) : null}
+        <div className="relative mx-auto w-full max-w-md min-h-screen shrink-0">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 z-0 w-[min(100%,22rem)] aspect-square max-h-[min(80vh,22rem)] -translate-x-1/2 -translate-y-1/2"
+            style={{
+              background:
+                'radial-gradient(ellipse at center, rgba(245, 158, 11, 0.1) 0%, rgba(11, 11, 12, 0) 65%)',
+            }}
+          />
+          <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center px-4 pt-10 text-center">
+            <div className="flex w-full flex-col items-center gap-5">
+              <p className="text-6xl font-bold tabular-nums tracking-tight text-white sm:text-7xl">
+                {formatTimer(timeLeft)}
+              </p>
+              <div className="flex w-full max-w-md flex-col items-center gap-2">
+                <p
+                  key={`sos-message-${timerMessageIndex}`}
+                  className="min-h-[5.5rem] max-w-md whitespace-pre-line text-lg font-medium leading-relaxed text-[#D4D4D8] transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
+                >
+                  {timerMessage}
+                </p>
+                {isLastTimerMessage ? (
+                  <p className="text-sm text-[#9A9AA0]">{LAST_TIMER_MESSAGE_NOTE}</p>
+                ) : null}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
