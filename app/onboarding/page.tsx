@@ -19,19 +19,19 @@ const steps = [
     step: 2,
     step_name: 'problem',
     title:
-      'Ты знаешь это чувство.\nКогда “ещё чуть-чуть” — и ты уже не контролируешь себя.',
+      'Ты знаешь это чувство.\nКогда “ещё чуть-чуть”, и ты уже не контролируешь себя.',
     subtitle: 'Всё происходит быстро. Почти автоматически.',
   },
   {
     step: 3,
     step_name: 'solution',
-    title: 'Проблема не в тебе.\nПроблема — в моменте импульса.',
-    subtitle: 'Если переждать его — ты сохраняешь контроль.',
+    title: 'Проблема не в тебе.\nПроблема в моменте импульса.',
+    subtitle: 'Если переждать его, ты сохраняешь контроль.',
   },
   {
     step: 4,
     step_name: 'motivation',
-    title: 'Всё, что нужно —\nпереждать 60–90 секунд.',
+    title: 'Всё, что нужно,\nпереждать 60-90 секунд.',
     subtitle: 'Этого достаточно, чтобы импульс начал спадать.',
   },
   {
@@ -86,14 +86,25 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 py-8">
-      <div className="flex w-full max-w-md flex-1 flex-col justify-center gap-8">
-        <div key={currentStep} className="animate-onboarding-step">
-          <h1 className="whitespace-pre-line text-center text-2xl font-semibold leading-snug text-gray-900 sm:text-3xl">
+    <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0B0B0C] px-4 py-6 sm:px-6">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 35%, rgba(255, 140, 0, 0.08), transparent 62%)',
+        }}
+      />
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 pb-[calc(16px+env(safe-area-inset-bottom))]">
+        <div
+          key={currentStep}
+          className="animate-onboarding-step rounded-3xl border border-white/5 bg-[#151517] px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.35)] sm:px-7 sm:py-10"
+        >
+          <h1 className="whitespace-pre-line text-center text-2xl font-semibold leading-snug text-white sm:text-3xl">
             {step.title}
           </h1>
           {step.subtitle ? (
-            <p className="mt-6 whitespace-pre-line text-center text-base text-gray-500 sm:text-base">
+            <p className="mt-5 whitespace-pre-line text-center text-base text-[#9A9AA0]">
               {step.subtitle}
             </p>
           ) : null}
@@ -130,7 +141,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={() => setCurrentStep((s) => s + 1)}
-              className="min-h-12 w-full rounded-xl bg-gray-900 px-6 py-3 text-base font-semibold text-white transition hover:bg-gray-800 sm:min-h-14 sm:w-auto sm:min-w-[10rem]"
+              className="min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-6 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99] sm:min-h-14 sm:w-auto sm:min-w-[10rem]"
             >
               Далее
             </button>
@@ -138,7 +149,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={finish}
-              className="min-h-12 w-full rounded-xl bg-gray-900 px-6 py-3 text-base font-semibold text-white transition hover:bg-gray-800 sm:min-h-14 sm:w-auto sm:min-w-[10rem]"
+              className="min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-6 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99] sm:min-h-14 sm:w-auto sm:min-w-[10rem]"
             >
               Начать
             </button>
