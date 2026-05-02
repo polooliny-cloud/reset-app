@@ -71,7 +71,7 @@ function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void })
       <p className="text-center text-6xl font-extrabold tabular-nums tracking-[0.02em] text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.12)] sm:text-7xl">
         {days}
       </p>
-      <p className="mt-3 text-sm text-[#9A9AA0]">
+      <p className="text-flow mt-3 text-sm leading-[1.45] text-[#9A9AA0]">
         {getDaysWord(days)} под контролем
       </p>
       <p className="mt-1 font-mono text-2xl tracking-wide text-white/90">{time}</p>
@@ -178,7 +178,7 @@ export default function Home() {
             </button>
 
             <div className="mx-auto flex w-full max-w-md flex-col rounded-3xl border border-white/5 bg-[#151517] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
-              <h1 className="text-center text-lg font-medium text-[#9A9AA0]">
+              <h1 className="text-flow-heading text-center text-lg font-medium leading-[1.45] text-[#9A9AA0]">
                 Количество ваших побед
               </h1>
               <p className="mt-3 text-center text-5xl font-bold tabular-nums text-white sm:text-6xl">
@@ -186,7 +186,7 @@ export default function Home() {
               </p>
               <XpLevelBlock xp={xp} variant="stats" />
               <div className="mt-7 border-t border-white/10 pt-5">
-                <p className="text-center text-sm font-normal text-[#9A9AA0]">
+                <p className="text-flow text-center text-sm font-normal leading-[1.45] text-[#9A9AA0]">
                   Всего опыта
                 </p>
                 <p className="mt-2 text-center text-2xl font-semibold text-white">
@@ -231,8 +231,10 @@ export default function Home() {
           </div>
 
           <div className="mt-5 rounded-3xl border border-white/5 bg-[#151517] p-5 shadow-[0_16px_36px_rgba(0,0,0,0.3)]">
-            <p className="text-base font-medium text-white">Перепрошивка привычки</p>
-            <p className="mt-1 text-sm text-[#9A9AA0]">
+            <p className="text-flow text-base font-medium leading-[1.45] text-white">
+              Перепрошивка привычки
+            </p>
+            <p className="text-flow mt-1 text-sm leading-[1.45] text-[#9A9AA0]">
               {(() => {
                 const remainingDays = Math.max(90 - (daysCount ?? 0), 0);
                 return `${remainingDays} ${getDaysWord(remainingDays)} до полной свободы`;
@@ -299,10 +301,12 @@ export default function Home() {
           <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
             <div
               id="reset-modal-title"
-              className="text-center text-base leading-snug text-white"
+              className="text-center text-base text-white"
             >
-              <p className="mb-0">Ты точно хочешь сбросить свой прогресс?</p>
-              <p className="mb-0 mt-2">
+              <p className="text-flow mb-0 leading-[1.45]">
+                Ты точно хочешь сбросить свой прогресс?
+              </p>
+              <p className="text-flow mb-0 mt-2 leading-[1.45]">
                 Если ты сорвался — будь честен перед собой.
               </p>
             </div>

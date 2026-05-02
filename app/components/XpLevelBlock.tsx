@@ -43,7 +43,7 @@ export function XpLevelBlock({ xp, variant }: { xp: number; variant: Variant }) 
         <div className="text-center text-4xl font-bold tabular-nums text-white">
           Уровень {skill.level}
         </div>
-        <div className="mt-2 px-4 text-center text-lg font-normal text-[#9A9AA0]">
+        <div className="text-flow mt-2 px-4 text-center text-lg font-normal leading-[1.45] text-[#9A9AA0]">
           {skill.title}
         </div>
         {progressBar}
@@ -56,7 +56,9 @@ export function XpLevelBlock({ xp, variant }: { xp: number; variant: Variant }) 
       <div className="mb-1 text-lg font-semibold text-white">
         Уровень {skill.level}
       </div>
-      <div className="mb-3 text-base font-normal text-[#9A9AA0]">{skill.title}</div>
+      <div className="text-flow mb-3 text-base font-normal leading-[1.45] text-[#9A9AA0]">
+        {skill.title}
+      </div>
       {progressBar}
     </div>
   );
