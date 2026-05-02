@@ -10,35 +10,23 @@ const steps = [
   {
     step: 1,
     step_name: 'welcome',
-    title:
-      'Ты не один.\nС этим сталкиваются тысячи парней.',
+    title: 'Привет!',
     subtitle:
-      'Это не “слабость”. Это привычка, которую можно сломать.',
+      'Пытаешься воздерживаться от мастурбации,\nно постоянно срываешься?',
   },
   {
     step: 2,
     step_name: 'problem',
     title:
-      'Ты знаешь это чувство.\nКогда “ещё чуть-чуть”, и ты уже не контролируешь себя.',
-    subtitle: 'Всё происходит быстро. Почти автоматически.',
+      'Здесь знают о твоей проблеме\nи знают, как её решить.',
+    subtitle: '',
   },
   {
     step: 3,
-    step_name: 'solution',
-    title: 'Проблема не в тебе.\nПроблема в моменте импульса.',
-    subtitle: 'Если переждать его, ты сохраняешь контроль.',
-  },
-  {
-    step: 4,
-    step_name: 'motivation',
-    title: 'Всё, что нужно,\nпереждать 60-90 секунд.',
-    subtitle: 'Этого достаточно, чтобы импульс начал спадать.',
-  },
-  {
-    step: 5,
     step_name: 'finish',
-    title: 'Нажми “Тревожную кнопку”\nкогда станет сложно',
-    subtitle: 'Таймер поможет тебе не сорваться в этот момент.',
+    title: 'Начинай сейчас.',
+    subtitle:
+      'Отслеживай свой прогресс в приложении,\nа в моменты, когда хочется сорваться,\nнажимай на «Тревожную кнопку» и отвлекай свой мозг.\n\nЭти инструменты ПОМОГУТ тебе.',
   },
 ];
 
@@ -63,10 +51,7 @@ export default function OnboardingPage() {
     if (!current) return;
     if (postedOnboardingSteps.has(current.step)) return;
     postedOnboardingSteps.add(current.step);
-    posthogCapture('onboarding_step', {
-      step: current.step,
-      step_name: current.step_name,
-    });
+    posthogCapture(`onboarding_step_${current.step}`);
   }, [currentStep]);
 
   const isLast = currentStep === steps.length - 1;
@@ -76,7 +61,7 @@ export default function OnboardingPage() {
     if (onboardingCompleteSent.current) return;
     onboardingCompleteSent.current = true;
     trackOnce('onboarding_complete');
-    posthogCapture('onboarding_complete');
+    posthogCapture('onboarding_completed');
     try {
       localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
     } catch {
