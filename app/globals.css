@@ -1,5 +1,37 @@
 @import "tailwindcss";
 
+/* Читаемые переносы на мобильных: ограничение меры строки + переносы слов (без break-all) */
+@layer utilities {
+  .text-flow {
+    max-width: min(340px, 90vw);
+    margin-left: auto;
+    margin-right: auto;
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+
+  .text-flow-heading {
+    max-width: min(340px, 90vw);
+    margin-left: auto;
+    margin-right: auto;
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    text-wrap: balance;
+  }
+
+  /* В строках flex/grid без своей max-width — только переносы */
+  .text-wrap-mobile {
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+  }
+}
+
 @keyframes onboarding-step {
   from {
     opacity: 0;

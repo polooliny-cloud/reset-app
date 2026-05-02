@@ -12,12 +12,12 @@ const MESSAGE_INTERVAL_SECONDS = 15;
 const WINS_KEY = 'wins';
 const XP_KEY = 'xp';
 const TIMER_MESSAGES = [
-  'Снова это желание…\nСейчас мозг ждёт привычное вознаграждение.',
-  'Раньше ты бы просто сделал это…\nНо сейчас ты ломаешь этот сценарий.',
-  'Сделай глубокий вдох,\nзадержи дыхание\nи медленно выдохни.',
-  'Тело уже успокаивается.\nИ желание начинает отпускать.',
-  'Прошла уже минута.\nЭто значит, что ты сам сделал свой выбор.',
-  'Ты справился!!!\nЗапомни это состояние — через час ты почувствуешь гордость за себя.',
+  'Снова это желание… Сейчас мозг ждёт привычное вознаграждение.',
+  'Раньше ты бы просто сделал это… Но сейчас ты ломаешь этот сценарий.',
+  'Сделай глубокий вдох, задержи дыхание и медленно выдохни.',
+  'Тело уже успокаивается. И желание начинает отпускать.',
+  'Прошла уже минута. Это значит, что ты сам сделал свой выбор.',
+  'Ты справился!!! Запомни это состояние — через час ты почувствуешь гордость за себя.',
 ] as const;
 const LAST_TIMER_MESSAGE_NOTE = 'Фух, хорошо, что я тогда не сдался';
 const TRIGGERS = [
@@ -174,10 +174,10 @@ export default function SosPage() {
 
       {screen === 'trigger' ? (
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-2 pb-28 pt-[calc(64px+env(safe-area-inset-top))]">
-          <h1 className="text-2xl font-semibold leading-snug text-white">
+          <h1 className="text-flow-heading text-2xl font-semibold leading-[1.4] text-white">
             Что сейчас происходит?
           </h1>
-          <p className="mb-6 mt-2 text-sm text-[#9A9AA0]">
+          <p className="text-flow mb-6 mt-2 text-sm leading-[1.45] text-[#9A9AA0]">
             Осознание ослабляет импульс
           </p>
 
@@ -199,7 +199,9 @@ export default function SosPage() {
                     checked={checked}
                     onChange={() => toggleTrigger(trigger)}
                   />
-                  <span>{trigger}</span>
+                  <span className="text-wrap-mobile min-w-0 flex-1 text-left leading-[1.45]">
+                    {trigger}
+                  </span>
                 </label>
               );
             })}
@@ -239,12 +241,14 @@ export default function SosPage() {
               <div className="flex w-full max-w-md flex-col items-center gap-2">
                 <p
                   key={`sos-message-${timerMessageIndex}`}
-                  className="min-h-[5.5rem] max-w-md whitespace-pre-line text-lg font-medium leading-relaxed text-[#D4D4D8] transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
+                  className="text-flow-heading min-h-[5.5rem] text-lg font-medium leading-[1.45] text-[#D4D4D8] transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
                 >
                   {timerMessage}
                 </p>
                 {isLastTimerMessage ? (
-                  <p className="text-sm text-[#9A9AA0]">{LAST_TIMER_MESSAGE_NOTE}</p>
+                  <p className="text-flow text-sm leading-[1.45] text-[#9A9AA0]">
+                    {LAST_TIMER_MESSAGE_NOTE}
+                  </p>
                 ) : null}
               </div>
             </div>
@@ -262,7 +266,7 @@ export default function SosPage() {
           <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
             <p
               id="sos-reward-title"
-              className="text-center text-base font-medium leading-relaxed text-white"
+              className="text-flow text-center text-base font-medium leading-[1.45] text-white"
             >
               Молодец. Ты стал ещё опытней в контроле над собой.
             </p>

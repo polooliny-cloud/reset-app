@@ -12,13 +12,13 @@ const steps = [
     step_name: 'welcome',
     title: 'Привет,',
     subtitle:
-      'Пытаешься воздерживаться от мастурбации,\nно постоянно срываешься?',
+      'Пытаешься воздерживаться от мастурбации, но постоянно срываешься?',
   },
   {
     step: 2,
     step_name: 'problem',
     title:
-      'Здесь знают о твоей проблеме\nи знают, как её решить.',
+      'Здесь знают о твоей проблеме и знают, как её решить.',
     subtitle: '',
   },
   {
@@ -26,7 +26,7 @@ const steps = [
     step_name: 'finish',
     title: 'Начинай сейчас.',
     subtitle:
-      'Отслеживай свой прогресс в приложении,\nа в моменты, когда хочется сорваться,\nнажимай на «Тревожную кнопку» и отвлекай свой мозг.\n\nЭти инструменты ПОМОГУТ тебе.',
+      'Отслеживай свой прогресс в приложении, а в моменты, когда хочется сорваться, нажимай на «Тревожную кнопку» и отвлекай свой мозг. Эти инструменты ПОМОГУТ тебе.',
   },
 ];
 
@@ -85,11 +85,11 @@ export default function OnboardingPage() {
           key={currentStep}
           className="animate-onboarding-step rounded-3xl border border-white/5 bg-[#151517] px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.35)] sm:px-7 sm:py-10"
         >
-          <h1 className="whitespace-pre-line text-center text-2xl font-semibold leading-snug text-white sm:text-3xl">
+          <h1 className="text-flow-heading text-center text-2xl font-semibold leading-[1.4] text-white sm:text-3xl">
             {step.title}
           </h1>
           {step.subtitle ? (
-            <p className="mt-5 whitespace-pre-line text-center text-base text-[#9A9AA0]">
+            <p className="text-flow mt-5 text-center text-base leading-[1.45] text-[#9A9AA0]">
               {step.subtitle}
             </p>
           ) : null}
