@@ -2,6 +2,9 @@ import posthog from 'posthog-js';
 
 const onceKeys = new Set<string>();
 const POSTHOG_INIT_FLAG = '__posthog_initialized__';
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION;
+
+type EventProps = Record<string, unknown>;
 
 function isBrowser() {
   return typeof window !== 'undefined';
@@ -55,4 +58,35 @@ export function posthogCapture(
   } catch {
     // ignore
   }
+}
+
+function getClientPlatform(): 'ios' | 'android' | 'desktop' | 'unknown' {
+  if (!isBrowser()) return 'unknown';
+  const ua = window.navigator.userAgent.toLowerCase();
+  if (/iphone|ipad|ipod/.test(ua)) return 'ios';
+  if (/android/.test(ua)) return 'android';
+  if (/macintosh|windows|linux/.test(ua)) return 'desktop';
+  return 'unknown';
+}
+
+function getInstalledState() {
+  if (!isBrowser()) return false;
+  const standaloneMedia =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(display-mode: standalone)').matches;
+  const iosStandalone = Boolean(
+    (window.navigator as Navigator & { standalone?: boolean }).standalone,
+  );
+  return standaloneMedia || iosStandalone;
+}
+
+export function captureEvent(name: string, props?: EventProps) {
+  const baseProps: EventProps = {
+    platform: getClientPlatform(),
+    is_installed: getInstalledState(),
+  };
+  if (APP_VERSION) {
+    baseProps.app_version = APP_VERSION;
+  }
+  posthogCapture(name, { ...baseProps, ...props });
 }

@@ -4,16 +4,23 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
+import { InstallFlowModal } from './components/InstallFlowModal';
 import { XpLevelBlock } from './components/XpLevelBlock';
 
 import { incrementMetric, trackEvent } from '@/lib/analytics';
-import { posthogCapture } from '@/lib/posthogCapture';
+import { ONBOARDING_COMPLETED_KEY } from '@/lib/onboarding';
+import { captureEvent } from '@/lib/posthogCapture';
 import { getDaysWord } from '@/lib/utils';
 
 const STORAGE_KEY = 'myapp_start_date';
 
 const WINS_KEY = 'wins';
 const XP_KEY = 'xp';
+const INSTALL_PROMPT_SHOWN_KEY = 'install_prompt_shown';
+const LAST_INSTALL_PROMPT_KEY = 'last_install_prompt';
+const SESSION_COUNT_KEY = 'session_count';
+const PROMPT_MIN_INTERVAL_MS = 12 * 60 * 60 * 1000;
+const INSTALL_PROMPT_MAX_SHOWN = 3;
 
 type HomeScreen = 'home' | 'wins';
 const EDGE_OFFSET = 16;
@@ -35,6 +42,23 @@ function getStreakProgress(startMs: number, nowMs: number) {
     days,
     time: `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`,
   };
+}
+
+function parseStoredNumber(value: string | null, fallback = 0) {
+  if (value === null) return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function isInstalledApp() {
+  if (typeof window === 'undefined') return false;
+  const standaloneMedia =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(display-mode: standalone)').matches;
+  const iosStandalone = Boolean(
+    (window.navigator as Navigator & { standalone?: boolean }).standalone,
+  );
+  return standaloneMedia || iosStandalone;
 }
 
 function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void }) {
@@ -86,6 +110,8 @@ export default function Home() {
   const [xp, setXp] = useState(0);
   const [daysCount, setDaysCount] = useState<number | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [showInstallFlow, setShowInstallFlow] = useState(false);
   const topInset = `calc(${TOP_OFFSET}px + env(safe-area-inset-top))`;
   const leftInset = `calc(${EDGE_OFFSET}px + env(safe-area-inset-left))`;
   const rightInset = `calc(${EDGE_OFFSET}px + env(safe-area-inset-right))`;
@@ -126,10 +152,41 @@ export default function Home() {
     }
   }, [pathname]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || pathname !== '/') return;
+    if (isInstalledApp()) return;
+
+    const onboardingDone =
+      localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
+    if (!onboardingDone) return;
+
+    const sessionCount = parseStoredNumber(localStorage.getItem(SESSION_COUNT_KEY));
+    const nextSessionCount = sessionCount + 1;
+    localStorage.setItem(SESSION_COUNT_KEY, String(nextSessionCount));
+
+    const installPromptShown = parseStoredNumber(
+      localStorage.getItem(INSTALL_PROMPT_SHOWN_KEY),
+    );
+    const lastPromptTs = parseStoredNumber(localStorage.getItem(LAST_INSTALL_PROMPT_KEY));
+    const enoughTimePassed =
+      lastPromptTs === 0 || Date.now() - lastPromptTs >= PROMPT_MIN_INTERVAL_MS;
+    const canShow = installPromptShown < INSTALL_PROMPT_MAX_SHOWN;
+    const isRepeatVisit = nextSessionCount > 1;
+
+    if (!isRepeatVisit || !enoughTimePassed || !canShow) return;
+
+    localStorage.setItem(
+      INSTALL_PROMPT_SHOWN_KEY,
+      String(installPromptShown + 1),
+    );
+    setShowInstallPrompt(true);
+    captureEvent('install_prompt_seen');
+  }, [pathname]);
+
   function handleConfirmReset() {
     trackEvent('reset_click');
     incrementMetric('reset_click');
-    posthogCapture('reset_click');
+    captureEvent('reset_click');
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('days');
     localStorage.removeItem(WINS_KEY);
@@ -139,6 +196,19 @@ export default function Home() {
     setShowResetModal(false);
     setScreen('home');
     syncLabelFromStorage();
+  }
+
+  function handleInstallDismiss() {
+    setShowInstallPrompt(false);
+    localStorage.setItem(LAST_INSTALL_PROMPT_KEY, String(Date.now()));
+    captureEvent('install_dismissed');
+  }
+
+  function handleInstallClick() {
+    setShowInstallPrompt(false);
+    setShowInstallFlow(true);
+    captureEvent('install_clicked');
+    captureEvent('install_flow_opened');
   }
 
   return (
@@ -279,7 +349,7 @@ export default function Home() {
               onClick={() => {
                 trackEvent('sos_click');
                 incrementMetric('sos_click');
-                posthogCapture('sos_click');
+                captureEvent('sos_click');
               }}
               className="block w-full rounded-3xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_20px_40px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
             >
@@ -329,6 +399,54 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {showInstallPrompt ? (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="install-prompt-title"
+        >
+          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+            <h2
+              id="install-prompt-title"
+              className="text-center text-xl font-semibold text-white"
+            >
+              Установи приложение
+            </h2>
+            <p className="mt-3 text-center text-sm leading-[1.45] text-[#9A9AA0]">
+              Открывается быстрее
+              <br />
+              Не нужно каждый раз заходить через браузер
+              <br />
+              Проще удерживать контроль в нужный момент
+            </p>
+            <button
+              type="button"
+              onClick={handleInstallClick}
+              className="mt-6 min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-3 text-base font-semibold text-white transition duration-200 ease-out hover:brightness-110"
+            >
+              Установить
+            </button>
+            <button
+              type="button"
+              onClick={handleInstallDismiss}
+              className="mt-3 block w-full text-center text-sm text-[#9A9AA0] transition duration-200 ease-out hover:text-white"
+            >
+              Позже
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <InstallFlowModal
+        open={showInstallFlow}
+        onClose={() => setShowInstallFlow(false)}
+        onFinish={() => setShowInstallFlow(false)}
+        onPlatformSelect={(platform) =>
+          captureEvent('install_platform_selected', { platform })
+        }
+      />
     </>
   );
 }

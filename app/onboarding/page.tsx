@@ -2,9 +2,9 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-import { trackOnce } from '@/lib/analytics';
+import { InstallFlowModal } from '@/app/components/InstallFlowModal';
 import { ONBOARDING_COMPLETED_KEY } from '@/lib/onboarding';
-import { posthogCapture } from '@/lib/posthogCapture';
+import { captureEvent } from '@/lib/posthogCapture';
 
 const steps = [
   {
@@ -31,43 +31,68 @@ const steps = [
 ];
 
 /** Живёт между mount/unmount в Strict Mode — один раз за загрузку страницы. */
-let onboardingStartPosted = false;
 const postedOnboardingSteps = new Set<number>();
+const postedInstallInstructionSteps = new Set<'ios' | 'android'>();
+const ONBOARDING_EVENT_DONE_KEY = 'onboarding_done';
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isInstallFlowOpen, setIsInstallFlowOpen] = useState(false);
   const onboardingCompleteSent = useRef(false);
-
-  useEffect(() => {
-    if (onboardingStartPosted) return;
-    onboardingStartPosted = true;
-    trackOnce('onboarding_start');
-    posthogCapture('onboarding_start');
-  }, []);
 
   useEffect(() => {
     const current = steps[currentStep];
     if (!current) return;
     if (postedOnboardingSteps.has(current.step)) return;
     postedOnboardingSteps.add(current.step);
-    posthogCapture(`onboarding_step_${current.step}`);
+    captureEvent('onboarding_screen_viewed', { step: current.step });
   }, [currentStep]);
 
   const isLast = currentStep === steps.length - 1;
   const step = steps[currentStep];
 
-  function finish() {
+  function completeOnboarding(method: 'install' | 'skip') {
+    if (onboardingCompleteSent.current) return;
+    if (typeof window !== 'undefined') {
+      const alreadySent = localStorage.getItem(ONBOARDING_EVENT_DONE_KEY) === 'true';
+      if (alreadySent) {
+        onboardingCompleteSent.current = true;
+      }
+    }
     if (onboardingCompleteSent.current) return;
     onboardingCompleteSent.current = true;
-    trackOnce('onboarding_complete');
-    posthogCapture('onboarding_completed');
+    try {
+      localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
+      localStorage.setItem(ONBOARDING_EVENT_DONE_KEY, 'true');
+    } catch {
+      // ignore
+    }
+    captureEvent('onboarding_completed', { method });
+  }
+
+  function finish() {
     try {
       localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
     } catch {
       // ignore
     }
     router.replace('/');
+  }
+
+  function openInstallFlow() {
+    setIsInstallFlowOpen(true);
+    captureEvent('install_flow_opened');
+    completeOnboarding('install');
+  }
+
+  function handlePlatformSelect(platform: 'ios' | 'android') {
+    captureEvent('install_platform_selected', { platform });
+  }
+
+  function skipInstall() {
+    completeOnboarding('skip');
+    finish();
   }
 
   return (
@@ -133,14 +158,27 @@ export default function OnboardingPage() {
           ) : (
             <button
               type="button"
-              onClick={finish}
+              onClick={openInstallFlow}
               className="min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-6 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99] sm:min-h-14 sm:w-auto sm:min-w-[10rem]"
             >
-              Начать
+              Установить приложение
             </button>
           )}
         </div>
       </div>
+
+      <InstallFlowModal
+        open={isInstallFlowOpen}
+        onClose={() => setIsInstallFlowOpen(false)}
+        onFinish={finish}
+        onSkip={skipInstall}
+        showSkip
+        onPlatformSelect={handlePlatformSelect}
+        onInstructionShown={(platform) => {
+          if (postedInstallInstructionSteps.has(platform)) return;
+          postedInstallInstructionSteps.add(platform);
+        }}
+      />
     </main>
   );
 }

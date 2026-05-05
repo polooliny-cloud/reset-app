@@ -4,8 +4,7 @@ import { IBM_Plex_Sans } from 'next/font/google';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-import { trackOnce } from '@/lib/analytics';
-import { posthogCapture } from '@/lib/posthogCapture';
+import { captureEvent } from '@/lib/posthogCapture';
 
 const DURATION_SECONDS = 90;
 const MESSAGE_INTERVAL_SECONDS = 15;
@@ -113,8 +112,7 @@ export default function SosPage() {
     if (timeLeft !== 0) return;
     if (hasTrackedSosCompletedRef.current) return;
     hasTrackedSosCompletedRef.current = true;
-    trackOnce('sos_completed');
-    posthogCapture('sos_completed');
+    captureEvent('victory_completed', { source: 'timer' });
   }, [screen, timeLeft]);
 
   useEffect(() => {
@@ -175,10 +173,10 @@ export default function SosPage() {
       {screen === 'trigger' ? (
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-2 pb-28 pt-[calc(64px+env(safe-area-inset-top))]">
           <h1 className="text-flow-heading text-2xl font-semibold leading-[1.4] text-white">
-            Что сейчас происходит?
+            Выбери триггер
           </h1>
           <p className="text-flow mb-6 mt-2 text-sm leading-[1.45] text-[#9A9AA0]">
-            Осознание ослабляет импульс
+            Ты учишься замечать то, из-за чего появляется желание
           </p>
 
           <div className="flex flex-1 flex-col gap-3">
