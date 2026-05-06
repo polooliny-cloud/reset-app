@@ -171,6 +171,7 @@ export default function OnboardingPage() {
         open={isInstallFlowOpen}
         onClose={() => setIsInstallFlowOpen(false)}
         onFinish={finish}
+        mode="onboarding"
         onSkip={skipInstall}
         showSkip
         onPlatformSelect={handlePlatformSelect}

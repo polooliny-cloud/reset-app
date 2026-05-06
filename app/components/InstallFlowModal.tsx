@@ -10,6 +10,7 @@ type InstallFlowModalProps = {
   open: boolean;
   onClose: () => void;
   onFinish: () => void;
+  mode?: 'onboarding' | 'manual';
   onSkip?: () => void;
   showSkip?: boolean;
   skipLabel?: string;
@@ -21,6 +22,7 @@ export function InstallFlowModal({
   open,
   onClose,
   onFinish,
+  mode = 'manual',
   onSkip,
   showSkip = false,
   skipLabel = 'Продолжить без установки',
@@ -138,7 +140,7 @@ export function InstallFlowModal({
           </>
         ) : null}
 
-        {showSkip ? (
+        {mode === 'onboarding' && showSkip ? (
           <button
             type="button"
             onClick={onSkip}
@@ -150,9 +152,9 @@ export function InstallFlowModal({
           <button
             type="button"
             onClick={onClose}
-            className="mt-4 block w-full text-center text-sm text-[#9A9AA0] transition duration-200 ease-out hover:text-white"
+            className="mt-4 block w-full text-center text-sm text-[#9A9AA0] underline underline-offset-4 transition duration-200 ease-out hover:text-white"
           >
-            Позже
+            Отмена
           </button>
         )}
       </div>

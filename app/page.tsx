@@ -8,7 +8,6 @@ import { InstallFlowModal } from './components/InstallFlowModal';
 import { XpLevelBlock } from './components/XpLevelBlock';
 
 import { incrementMetric, trackEvent } from '@/lib/analytics';
-import { ONBOARDING_COMPLETED_KEY } from '@/lib/onboarding';
 import { captureEvent } from '@/lib/posthogCapture';
 import { getDaysWord } from '@/lib/utils';
 
@@ -16,15 +15,12 @@ const STORAGE_KEY = 'myapp_start_date';
 
 const WINS_KEY = 'wins';
 const XP_KEY = 'xp';
-const INSTALL_PROMPT_SHOWN_KEY = 'install_prompt_shown';
-const LAST_INSTALL_PROMPT_KEY = 'last_install_prompt';
-const SESSION_COUNT_KEY = 'session_count';
-const PROMPT_MIN_INTERVAL_MS = 12 * 60 * 60 * 1000;
-const INSTALL_PROMPT_MAX_SHOWN = 3;
 
-type HomeScreen = 'home' | 'wins';
+type HomeScreen = 'home' | 'wins' | 'deadline';
 const EDGE_OFFSET = 16;
 const TOP_OFFSET = 8;
+const ABSTINENCE_DEADLINE_DAYS_KEY = 'abstinence_deadline_days';
+const ABSTINENCE_DEADLINE_HOURS_KEY = 'abstinence_deadline_hours';
 
 function pad(n: number) {
   return n.toString().padStart(2, '0');
@@ -42,23 +38,6 @@ function getStreakProgress(startMs: number, nowMs: number) {
     days,
     time: `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`,
   };
-}
-
-function parseStoredNumber(value: string | null, fallback = 0) {
-  if (value === null) return fallback;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function isInstalledApp() {
-  if (typeof window === 'undefined') return false;
-  const standaloneMedia =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(display-mode: standalone)').matches;
-  const iosStandalone = Boolean(
-    (window.navigator as Navigator & { standalone?: boolean }).standalone,
-  );
-  return standaloneMedia || iosStandalone;
 }
 
 function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void }) {
@@ -110,8 +89,9 @@ export default function Home() {
   const [xp, setXp] = useState(0);
   const [daysCount, setDaysCount] = useState<number | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [showInstallFlow, setShowInstallFlow] = useState(false);
+  const [deadlineDaysInput, setDeadlineDaysInput] = useState('');
+  const [deadlineHoursInput, setDeadlineHoursInput] = useState('');
   const topInset = `calc(${TOP_OFFSET}px + env(safe-area-inset-top))`;
   const leftInset = `calc(${EDGE_OFFSET}px + env(safe-area-inset-left))`;
   const rightInset = `calc(${EDGE_OFFSET}px + env(safe-area-inset-right))`;
@@ -154,33 +134,10 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || pathname !== '/') return;
-    if (isInstalledApp()) return;
-
-    const onboardingDone =
-      localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
-    if (!onboardingDone) return;
-
-    const sessionCount = parseStoredNumber(localStorage.getItem(SESSION_COUNT_KEY));
-    const nextSessionCount = sessionCount + 1;
-    localStorage.setItem(SESSION_COUNT_KEY, String(nextSessionCount));
-
-    const installPromptShown = parseStoredNumber(
-      localStorage.getItem(INSTALL_PROMPT_SHOWN_KEY),
-    );
-    const lastPromptTs = parseStoredNumber(localStorage.getItem(LAST_INSTALL_PROMPT_KEY));
-    const enoughTimePassed =
-      lastPromptTs === 0 || Date.now() - lastPromptTs >= PROMPT_MIN_INTERVAL_MS;
-    const canShow = installPromptShown < INSTALL_PROMPT_MAX_SHOWN;
-    const isRepeatVisit = nextSessionCount > 1;
-
-    if (!isRepeatVisit || !enoughTimePassed || !canShow) return;
-
-    localStorage.setItem(
-      INSTALL_PROMPT_SHOWN_KEY,
-      String(installPromptShown + 1),
-    );
-    setShowInstallPrompt(true);
-    captureEvent('install_prompt_seen');
+    const storedDays = localStorage.getItem(ABSTINENCE_DEADLINE_DAYS_KEY) ?? '';
+    const storedHours = localStorage.getItem(ABSTINENCE_DEADLINE_HOURS_KEY) ?? '';
+    setDeadlineDaysInput(storedDays);
+    setDeadlineHoursInput(storedHours);
   }, [pathname]);
 
   function handleConfirmReset() {
@@ -198,17 +155,52 @@ export default function Home() {
     syncLabelFromStorage();
   }
 
-  function handleInstallDismiss() {
-    setShowInstallPrompt(false);
-    localStorage.setItem(LAST_INSTALL_PROMPT_KEY, String(Date.now()));
-    captureEvent('install_dismissed');
+  function handleManualInstallOpen() {
+    setShowInstallFlow(true);
+    captureEvent('install_flow_opened');
+    captureEvent('install_flow_opened_manual');
   }
 
-  function handleInstallClick() {
-    setShowInstallPrompt(false);
-    setShowInstallFlow(true);
-    captureEvent('install_clicked');
-    captureEvent('install_flow_opened');
+  function normalizeNumericInput(value: string) {
+    return value.replace(/\D/g, '');
+  }
+
+  function handleDaysChange(value: string) {
+    setDeadlineDaysInput(normalizeNumericInput(value));
+  }
+
+  function handleHoursChange(value: string) {
+    const normalized = normalizeNumericInput(value);
+    if (normalized === '') {
+      setDeadlineHoursInput('');
+      return;
+    }
+    const numeric = Math.min(Number(normalized), 24);
+    setDeadlineHoursInput(String(numeric));
+  }
+
+  const deadlineDays = Number(deadlineDaysInput || '0');
+  const deadlineHours = Number(deadlineHoursInput || '0');
+  const canConfirmDeadline =
+    Number.isFinite(deadlineDays) &&
+    Number.isFinite(deadlineHours) &&
+    deadlineHours <= 24 &&
+    (deadlineDays > 0 || deadlineHours > 0);
+
+  function handleConfirmDeadline() {
+    if (!canConfirmDeadline) return;
+    const nowMs = Date.now();
+    const offsetMs = (deadlineDays * 24 + deadlineHours) * 3_600_000;
+    const startDateIso = new Date(nowMs - offsetMs).toISOString();
+    try {
+      localStorage.setItem(ABSTINENCE_DEADLINE_DAYS_KEY, String(deadlineDays));
+      localStorage.setItem(ABSTINENCE_DEADLINE_HOURS_KEY, String(deadlineHours));
+      localStorage.setItem(STORAGE_KEY, startDateIso);
+    } catch {
+      // ignore
+    }
+    setDaysCount(deadlineDays);
+    setScreen('home');
   }
 
   return (
@@ -266,6 +258,102 @@ export default function Home() {
             </div>
           </div>
         </main>
+      ) : screen === 'deadline' ? (
+        <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-8 pt-6 sm:px-6">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{
+              background:
+                'radial-gradient(circle at 50% 35%, rgba(255, 140, 0, 0.06), transparent 64%)',
+            }}
+          />
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-10">
+            <button
+              type="button"
+              onClick={() => setScreen('home')}
+              aria-label="Назад"
+              className="fixed left-4 z-50 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
+              style={{ top: 'calc(16px + env(safe-area-inset-top))' }}
+            >
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+              >
+                <path
+                  d="M15 18L9 12L15 6"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
+            <div className="mx-auto mt-10 flex w-full max-w-md flex-1 flex-col pt-8">
+              <h1 className="text-flow-heading text-center text-2xl font-semibold leading-[1.4] text-white">
+                Выставь срок своего воздержания
+              </h1>
+              <p className="text-flow mt-3 text-center text-sm leading-[1.45] text-[#9A9AA0]">
+                Если ты уже в процессе воздержания
+              </p>
+
+              <div className="mt-8 rounded-3xl border border-white/5 bg-[#151517] p-5 shadow-[0_16px_36px_rgba(0,0,0,0.3)]">
+                <div className="mx-auto flex max-w-[18rem] items-end justify-center gap-3">
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <label
+                      htmlFor="deadline-days"
+                      className="text-flow mb-2 text-center text-xs text-[#9A9AA0]"
+                    >
+                      Дни
+                    </label>
+                    <input
+                      id="deadline-days"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={deadlineDaysInput}
+                      onChange={(e) => handleDaysChange(e.target.value)}
+                      placeholder="0"
+                      className="h-12 w-full rounded-2xl border border-white/10 bg-[#1C1C1F] px-4 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-[#707077] focus:border-white/20"
+                    />
+                  </div>
+
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <label
+                      htmlFor="deadline-hours"
+                      className="text-flow mb-2 text-center text-xs text-[#9A9AA0]"
+                    >
+                      Часы
+                    </label>
+                    <input
+                      id="deadline-hours"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={deadlineHoursInput}
+                      onChange={(e) => handleHoursChange(e.target.value)}
+                      placeholder="0"
+                      className="h-12 w-full rounded-2xl border border-white/10 bg-[#1C1C1F] px-4 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-[#707077] focus:border-white/20"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {canConfirmDeadline ? (
+                <button
+                  type="button"
+                  onClick={handleConfirmDeadline}
+                  className="mt-6 min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+                >
+                  Подтвердить
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </main>
       ) : (
       <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0B0B0C] px-4 pt-5 pb-6 sm:px-6">
         <div
@@ -277,6 +365,32 @@ export default function Home() {
           }}
         />
         <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-12">
+        <button
+          type="button"
+          onClick={() => setScreen('deadline')}
+          aria-label="Срок воздержания"
+          className="absolute inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#1C1C1F] text-white/85 shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition duration-200 ease-out hover:scale-[1.02] hover:bg-[#242428] active:scale-95"
+          style={{ top: topInset, right: `calc(${rightInset} + 72px)` }}
+        >
+          <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+            <circle
+              cx="12"
+              cy="12"
+              r="8.25"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              opacity="0.9"
+            />
+            <path
+              d="M12 8.5V12L14.8 13.8"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+
         <button
           type="button"
           onClick={() => setScreen('wins')}
@@ -336,8 +450,15 @@ export default function Home() {
           <div className="mt-4 flex items-center justify-between px-1">
             <button
               type="button"
+              onClick={handleManualInstallOpen}
+              className="text-sm text-[#9A9AA0] underline underline-offset-4 transition-colors duration-200 ease-out hover:text-white"
+            >
+              Скачать
+            </button>
+            <button
+              type="button"
               onClick={() => setShowResetModal(true)}
-              className="ml-auto text-sm text-[#9A9AA0] underline underline-offset-4 transition-colors duration-200 ease-out hover:text-white"
+              className="text-sm text-[#9A9AA0] underline underline-offset-4 transition-colors duration-200 ease-out hover:text-white"
             >
               Сбросить
             </button>
@@ -400,49 +521,11 @@ export default function Home() {
         </div>
       )}
 
-      {showInstallPrompt ? (
-        <div
-          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="install-prompt-title"
-        >
-          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
-            <h2
-              id="install-prompt-title"
-              className="text-center text-xl font-semibold text-white"
-            >
-              Установи приложение
-            </h2>
-            <p className="mt-3 text-center text-sm leading-[1.45] text-[#9A9AA0]">
-              Открывается быстрее
-              <br />
-              Не нужно каждый раз заходить через браузер
-              <br />
-              Проще удерживать контроль в нужный момент
-            </p>
-            <button
-              type="button"
-              onClick={handleInstallClick}
-              className="mt-6 min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-3 text-base font-semibold text-white transition duration-200 ease-out hover:brightness-110"
-            >
-              Установить
-            </button>
-            <button
-              type="button"
-              onClick={handleInstallDismiss}
-              className="mt-3 block w-full text-center text-sm text-[#9A9AA0] transition duration-200 ease-out hover:text-white"
-            >
-              Позже
-            </button>
-          </div>
-        </div>
-      ) : null}
-
       <InstallFlowModal
         open={showInstallFlow}
         onClose={() => setShowInstallFlow(false)}
         onFinish={() => setShowInstallFlow(false)}
+        mode="manual"
         onPlatformSelect={(platform) =>
           captureEvent('install_platform_selected', { platform })
         }
