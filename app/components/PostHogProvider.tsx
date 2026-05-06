@@ -7,6 +7,7 @@ import { useEffect, Suspense } from 'react';
 
 import {
   canUsePosthog,
+  getOrCreateUserId,
   isPosthogInitialized,
   markPosthogInitialized,
   posthogCapture,
@@ -24,6 +25,17 @@ if (canUsePosthog() && posthogKey && !isPosthogInitialized()) {
     capture_pageleave: true,
   });
   markPosthogInitialized();
+  try {
+    const userId = getOrCreateUserId();
+    if (userId) {
+      posthog.identify(userId);
+    }
+    posthog.register({
+      is_dev: process.env.NODE_ENV === 'development',
+    });
+  } catch {
+    // ignore
+  }
 }
 
 function PostHogPageView() {

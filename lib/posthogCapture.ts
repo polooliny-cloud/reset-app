@@ -3,6 +3,8 @@ import posthog from 'posthog-js';
 const onceKeys = new Set<string>();
 const POSTHOG_INIT_FLAG = '__posthog_initialized__';
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION;
+export const POSTHOG_USER_ID_KEY = 'myapp_user_id';
+const FIRST_VICTORY_CAPTURED_KEY = 'ph_first_victory_completed';
 
 type EventProps = Record<string, unknown>;
 
@@ -89,4 +91,37 @@ export function captureEvent(name: string, props?: EventProps) {
     baseProps.app_version = APP_VERSION;
   }
   posthogCapture(name, { ...baseProps, ...props });
+}
+
+/** Стабильный anonymous id для PostHog identify (localStorage или новый UUID). */
+export function getOrCreateUserId(): string {
+  if (!isBrowser()) return '';
+  try {
+    let id = localStorage.getItem(POSTHOG_USER_ID_KEY);
+    if (!id) {
+      id =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `u_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+      localStorage.setItem(POSTHOG_USER_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Первая победа в приложении: один раз за всё время после полного таймера (90 с).
+ * Защита от дублей: localStorage + ref на экране таймера.
+ */
+export function captureFirstVictoryIfNeeded() {
+  if (!canCapturePosthog()) return;
+  try {
+    if (localStorage.getItem(FIRST_VICTORY_CAPTURED_KEY) === 'true') return;
+    localStorage.setItem(FIRST_VICTORY_CAPTURED_KEY, 'true');
+  } catch {
+    return;
+  }
+  captureEvent('victory_completed', { source: 'timer' });
 }

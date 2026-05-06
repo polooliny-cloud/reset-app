@@ -4,7 +4,7 @@ import { IBM_Plex_Sans } from 'next/font/google';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-import { captureEvent } from '@/lib/posthogCapture';
+import { captureFirstVictoryIfNeeded } from '@/lib/posthogCapture';
 
 const DURATION_SECONDS = 90;
 const MESSAGE_INTERVAL_SECONDS = 15;
@@ -219,7 +219,7 @@ export default function SosPage() {
     if (timeLeft !== 0) return;
     if (hasTrackedSosCompletedRef.current) return;
     hasTrackedSosCompletedRef.current = true;
-    captureEvent('victory_completed', { source: 'timer' });
+    captureFirstVictoryIfNeeded();
   }, [screen, timeLeft]);
 
   useEffect(() => {
