@@ -63,10 +63,10 @@ export function InstallFlowModal({
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_24px_50px_rgba(0,0,0,0.45)] sm:p-7">
         {screen === 'device' ? (
           <>
-            <h2 className="text-center text-2xl font-semibold leading-[1.35] text-white">
+            <h2 className="text-title text-measure text-center text-2xl font-semibold text-white">
               Как ты будешь устанавливать?
             </h2>
-            <p className="mt-2 text-center text-sm leading-[1.45] text-[#9A9AA0]">
+            <p className="text-body text-measure mt-2 text-center text-sm text-[#9A9AA0]">
               Это займёт 10 секунд
             </p>
             <div className="mt-6 flex flex-col gap-3">
@@ -90,18 +90,18 @@ export function InstallFlowModal({
 
         {screen === 'android' ? (
           <>
-            <h2 className="text-center text-2xl font-semibold leading-[1.35] text-white">
+            <h2 className="text-title text-measure text-center text-2xl font-semibold text-white">
               Установка на Android
             </h2>
-            <ol className="mt-5 space-y-3 text-sm leading-[1.45] text-[#D4D4D8]">
+            <ol className="text-body text-measure mt-5 space-y-3 text-sm text-[#D4D4D8]">
               <li>1. Нажми на три точки в правом верхнем углу</li>
               <li>2. Выбери «Добавить на главный экран»</li>
               <li>3. Подтверди установку</li>
             </ol>
-            <p className="mt-5 text-sm leading-[1.45] text-[#9A9AA0]">
+            <p className="text-body text-measure mt-5 text-sm text-[#9A9AA0]">
               После этого открой приложение с экрана телефона
             </p>
-            <p className="mt-2 text-sm leading-[1.45] text-[#9A9AA0]">
+            <p className="text-body text-measure mt-2 text-sm text-[#9A9AA0]">
               Когда добавишь на экран, открывай приложение оттуда
             </p>
             <button
@@ -116,18 +116,18 @@ export function InstallFlowModal({
 
         {screen === 'ios' ? (
           <>
-            <h2 className="text-center text-2xl font-semibold leading-[1.35] text-white">
+            <h2 className="text-title text-measure text-center text-2xl font-semibold text-white">
               Установка на iPhone
             </h2>
-            <ol className="mt-5 space-y-3 text-sm leading-[1.45] text-[#D4D4D8]">
+            <ol className="text-body text-measure mt-5 space-y-3 text-sm text-[#D4D4D8]">
               <li>1. Нажми кнопку «Поделиться»</li>
               <li>2. Выбери «На экран Домой»</li>
               <li>3. Нажми «Добавить»</li>
             </ol>
-            <p className="mt-5 text-sm leading-[1.45] text-[#9A9AA0]">
+            <p className="text-body text-measure mt-5 text-sm text-[#9A9AA0]">
               После этого открой приложение с экрана телефона
             </p>
-            <p className="mt-2 text-sm leading-[1.45] text-[#9A9AA0]">
+            <p className="text-body text-measure mt-2 text-sm text-[#9A9AA0]">
               Когда добавишь на экран, открывай приложение оттуда
             </p>
             <button

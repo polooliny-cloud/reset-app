@@ -30,8 +30,11 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [checked, setChecked] = useState(false);
+  const [checkedPath, setCheckedPath] = useState<string | null>(null);
 
   useEffect(() => {
+    setChecked(false);
+    setCheckedPath(null);
     if (applyResetOnboardingFromUrl()) return;
 
     let done = false;
@@ -47,6 +50,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
         return;
       }
       setChecked(true);
+      setCheckedPath(pathname);
       return;
     }
 
@@ -56,9 +60,10 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
     }
 
     setChecked(true);
+    setCheckedPath(pathname);
   }, [pathname, router]);
 
-  if (!checked) {
+  if (!checked || checkedPath !== pathname) {
     return (
       <div className="flex min-h-screen flex-1 items-center justify-center bg-gray-50">
         <div

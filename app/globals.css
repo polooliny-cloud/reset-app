@@ -2,7 +2,21 @@
 
 /* Читаемые переносы на мобильных: ограничение меры строки + переносы слов (без break-all) */
 @layer utilities {
-  .text-flow {
+  .text-title {
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .text-body {
+    line-height: 1.46;
+  }
+
+  .text-caption {
+    line-height: 1.4;
+  }
+
+  .text-measure {
     max-width: min(340px, 90vw);
     margin-left: auto;
     margin-right: auto;
@@ -10,12 +24,27 @@
     overflow-wrap: break-word;
     hyphens: auto;
     -webkit-hyphens: auto;
+    text-wrap: pretty;
+  }
+
+  .text-flow {
+    max-width: min(340px, 90vw);
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.46;
+    word-break: normal;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    text-wrap: pretty;
   }
 
   .text-flow-heading {
     max-width: min(340px, 90vw);
     margin-left: auto;
     margin-right: auto;
+    line-height: 1.32;
+    letter-spacing: -0.01em;
     word-break: normal;
     overflow-wrap: break-word;
     hyphens: auto;
@@ -25,6 +54,7 @@
 
   /* В строках flex/grid без своей max-width — только переносы */
   .text-wrap-mobile {
+    line-height: 1.46;
     word-break: normal;
     overflow-wrap: break-word;
     hyphens: auto;

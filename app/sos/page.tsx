@@ -279,10 +279,10 @@ export default function SosPage() {
 
       {screen === 'trigger' ? (
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-2 pb-28 pt-[calc(64px+env(safe-area-inset-top))]">
-          <h1 className="text-flow-heading text-2xl font-semibold leading-[1.4] text-white">
+          <h1 className="text-flow-heading text-2xl font-semibold text-white">
             Выбери триггер
           </h1>
-          <p className="text-flow mb-6 mt-2 text-sm leading-[1.45] text-[#9A9AA0]">
+          <p className="text-flow mb-6 mt-2 text-sm text-[#9A9AA0]">
             Ты учишься замечать то, из-за чего появляется желание
           </p>
 
@@ -304,7 +304,7 @@ export default function SosPage() {
                     checked={checked}
                     onChange={() => toggleTrigger(trigger)}
                   />
-                  <span className="text-wrap-mobile min-w-0 flex-1 text-left leading-[1.45]">
+                  <span className="text-wrap-mobile min-w-0 flex-1 text-left">
                     {trigger}
                   </span>
                 </label>
@@ -350,12 +350,12 @@ export default function SosPage() {
               <div className="flex w-full max-w-md flex-col items-center gap-2">
                 <p
                   key={`sos-message-${timerMessageIndex}`}
-                  className="text-flow-heading min-h-[5.5rem] text-lg font-medium leading-[1.45] text-[#D4D4D8] transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
+                  className="text-flow-heading min-h-[5.5rem] text-lg font-medium text-[#D4D4D8] transition-opacity duration-300 motion-safe:animate-sos-phase-text sm:text-xl"
                 >
                   {timerMessage}
                 </p>
                 {isLastTimerMessage ? (
-                  <p className="text-flow text-sm leading-[1.45] text-[#9A9AA0]">
+                  <p className="text-flow text-sm text-[#9A9AA0]">
                     {LAST_TIMER_MESSAGE_NOTE}
                   </p>
                 ) : null}
@@ -375,7 +375,7 @@ export default function SosPage() {
           <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
             <p
               id="sos-reward-title"
-              className="text-flow text-center text-base font-medium leading-[1.45] text-white"
+              className="text-flow text-center text-base font-medium text-white"
             >
               Молодец. Ты стал ещё опытней в контроле над собой.
             </p>
