@@ -40,7 +40,7 @@ export function XpLevelBlock({ xp, variant }: { xp: number; variant: Variant }) 
   if (variant === 'stats') {
     return (
       <div className="mt-6 w-full">
-        <div className="text-center text-4xl font-bold tabular-nums text-white">
+        <div className="text-title text-center text-4xl font-bold tabular-nums text-white">
           Уровень {skill.level}
         </div>
         <div className="text-flow mt-2 px-4 text-center text-lg font-normal text-[#9A9AA0]">
@@ -53,7 +53,7 @@ export function XpLevelBlock({ xp, variant }: { xp: number; variant: Variant }) 
 
   return (
     <div className="mt-6 w-full text-center">
-      <div className="mb-1 text-lg font-semibold text-white">
+      <div className="text-title mb-1 text-lg font-semibold text-white">
         Уровень {skill.level}
       </div>
       <div className="text-flow mb-3 text-base font-normal text-[#9A9AA0]">

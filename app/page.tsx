@@ -239,7 +239,7 @@ export default function Home() {
               </svg>
             </button>
 
-            <div className="mx-auto flex w-full max-w-md flex-col rounded-3xl border border-white/5 bg-[#151517] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
+            <div className="surface-card mx-auto flex w-full max-w-md flex-col p-6">
               <h1 className="text-flow-heading text-center text-lg font-medium text-[#9A9AA0]">
                 Количество ваших побед
               </h1>
@@ -300,7 +300,7 @@ export default function Home() {
                 Если ты уже в процессе воздержания
               </p>
 
-              <div className="mt-8 rounded-3xl border border-white/5 bg-[#151517] p-5 shadow-[0_16px_36px_rgba(0,0,0,0.3)]">
+              <div className="surface-card mt-8 p-5">
                 <div className="mx-auto flex max-w-[18rem] items-end justify-center gap-3">
                   <div className="flex min-w-0 flex-1 flex-col">
                     <label
@@ -343,11 +343,7 @@ export default function Home() {
               </div>
 
               {canConfirmDeadline ? (
-                <button
-                  type="button"
-                  onClick={handleConfirmDeadline}
-                  className="mt-6 min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
-                >
+                <button type="button" onClick={handleConfirmDeadline} className="primary-cta mt-6">
                   Подтвердить
                 </button>
               ) : null}
@@ -410,11 +406,11 @@ export default function Home() {
         </div>
 
         <div className="mx-auto mt-10 flex w-full max-w-md flex-1 flex-col pt-8">
-          <div className="flex min-h-[10rem] flex-col items-center justify-center rounded-3xl border border-white/5 bg-[#151517] px-6 py-8 shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
+          <div className="surface-card flex min-h-[10rem] flex-col items-center justify-center px-6 py-8">
             <StreakClock onDaysChange={setDaysCount} />
           </div>
 
-          <div className="mt-5 rounded-3xl border border-white/5 bg-[#151517] p-5 shadow-[0_16px_36px_rgba(0,0,0,0.3)]">
+          <div className="surface-card mt-5 p-5">
             <p className="text-flow text-base font-medium text-white">
               Перепрошивка привычки
             </p>
@@ -451,14 +447,14 @@ export default function Home() {
             <button
               type="button"
               onClick={handleManualInstallOpen}
-              className="text-sm text-[#9A9AA0] underline underline-offset-4 transition-colors duration-200 ease-out hover:text-white"
+              className="secondary-link !w-auto"
             >
               Скачать
             </button>
             <button
               type="button"
               onClick={() => setShowResetModal(true)}
-              className="text-sm text-[#9A9AA0] underline underline-offset-4 transition-colors duration-200 ease-out hover:text-white"
+              className="secondary-link !w-auto"
             >
               Сбросить
             </button>
@@ -489,7 +485,7 @@ export default function Home() {
           aria-modal="true"
           aria-labelledby="reset-modal-title"
         >
-          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+          <div className="surface-card w-full max-w-sm p-6">
             <div
               id="reset-modal-title"
               className="text-center text-base text-white"

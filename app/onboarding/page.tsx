@@ -202,7 +202,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label="Назад"
-      className="fixed left-4 z-40 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
+      className="fixed left-4 z-40 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-md transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
       style={{ top: 'calc(16px + env(safe-area-inset-top))' }}
     >
       <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none">
@@ -493,7 +493,7 @@ export default function OnboardingPage() {
       <>
         <BackButton onClick={handleBack} />
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col pt-[calc(72px+env(safe-area-inset-top))]">
-          <div className="animate-onboarding-step rounded-3xl border border-white/5 bg-[#151517] px-5 py-7 shadow-[0_20px_45px_rgba(0,0,0,0.35)]">
+          <div className="surface-card animate-onboarding-step px-5 py-7">
             <p className="text-center text-xl font-semibold text-white">
               Вопрос {questionIndex + 1}
             </p>
@@ -508,7 +508,7 @@ export default function OnboardingPage() {
                   onClick={() => handleQuestionAnswer(option)}
                   className={`min-h-12 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition duration-200 ease-out ${
                     selectedAnswer === option
-                      ? 'border-amber-300/35 bg-[#1C1C1F] text-white'
+                      ? 'border-amber-300/35 bg-[#232327] text-white'
                       : 'border-white/10 bg-[#1C1C1F] text-[#E5E5E8] hover:bg-[#25252A]'
                   }`}
                 >
@@ -522,10 +522,10 @@ export default function OnboardingPage() {
               type="button"
               onClick={handleQuestionNext}
               disabled={!selectedAnswer}
-              className={`min-h-12 w-full rounded-2xl border px-6 py-3 text-base font-semibold shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out active:scale-[0.99] ${
+              className={`primary-cta ${
                 selectedAnswer
-                  ? 'border-amber-300/20 bg-[#1C1C1F] text-white hover:brightness-110'
-                  : 'cursor-not-allowed border-white/10 bg-[#1C1C1F]/70 text-white/45'
+                  ? ''
+                  : 'cursor-not-allowed border-white/10 bg-[#1C1C1F]/70 text-white/45 hover:brightness-100'
               }`}
             >
               {isLastQuestion ? 'Завершить тест' : 'Далее'}
@@ -534,7 +534,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={handleSkipQuestion}
-                className="mt-3 block w-full text-center text-sm text-[#9A9AA0] underline underline-offset-4 transition duration-200 ease-out hover:text-white"
+                className="secondary-link mt-3"
               >
                 Пропустить
               </button>
@@ -555,7 +555,7 @@ export default function OnboardingPage() {
       <>
         <BackButton onClick={handleBack} />
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col pt-[calc(60px+env(safe-area-inset-top))] pb-[calc(12px+env(safe-area-inset-bottom))]">
-          <div className="animate-onboarding-step flex flex-1 flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-black/15 shadow-[0_22px_48px_rgba(0,0,0,0.42)]">
+          <div className="animate-onboarding-step flex flex-1 flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 shadow-[0_22px_48px_rgba(0,0,0,0.42)]">
             <div className="flex min-h-[44%] flex-col items-center justify-center px-6 pb-4 pt-10">
               <p className="text-sm uppercase tracking-[0.18em] text-white/75">Reset</p>
               <p className="mt-7 text-6xl sm:text-7xl">{slide.emoji}</p>
@@ -581,7 +581,7 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={onNext}
-                  className="mt-5 min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-6 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+                  className="primary-cta mt-5"
                 >
                   Далее
                 </button>
@@ -605,19 +605,15 @@ export default function OnboardingPage() {
       <div className="relative z-10 flex min-h-0 flex-1">
         {stage === 'welcome' ? (
           <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-2 pb-[calc(16px+env(safe-area-inset-bottom))] pt-[calc(20px+env(safe-area-inset-top))]">
-            <p className="text-sm uppercase tracking-[0.2em] text-white/80">Reset</p>
-            <h1 className="text-title mt-10 text-center text-3xl font-semibold text-white">
+            <p className="text-sm uppercase tracking-[0.22em] text-white/80">Reset</p>
+            <h1 className="text-title mt-10 text-center text-[2.1rem] font-semibold text-white">
               Добро пожаловать!
             </h1>
             <p className="text-body text-measure mt-4 text-center text-[15px] text-[#9A9AA0]">
               Давайте начнем с того, чтобы узнать, есть ли у вас проблемы с порно
             </p>
             <div className="mt-auto w-full pt-8">
-              <button
-                type="button"
-                onClick={() => setStage('question')}
-                className="min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-6 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
-              >
+              <button type="button" onClick={() => setStage('question')} className="primary-cta">
                 Начать тест
               </button>
             </div>
@@ -632,7 +628,7 @@ export default function OnboardingPage() {
             <div className="mx-auto flex w-full max-w-md flex-1 flex-col pt-[calc(70px+env(safe-area-inset-top))]">
               <div className="animate-onboarding-step flex min-h-0 flex-1 flex-col">
                 <h1 className="text-center text-2xl font-semibold text-white">Симптомы</h1>
-                <div className="mt-4 rounded-2xl border border-red-400/20 bg-[#2A1115] px-4 py-3">
+                <div className="mt-4 rounded-2xl border border-red-400/20 bg-[#2A1115] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.24)]">
                   <p className="text-body text-measure text-center text-sm text-[#FFB6BD]">
                     Чрезмерное использование порно может иметь негативные психологические
                     последствия.
@@ -680,11 +676,7 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-md px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
-                <button
-                  type="button"
-                  onClick={handleSymptomsNext}
-                  className="min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-6 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
-                >
+                <button type="button" onClick={handleSymptomsNext} className="primary-cta">
                   Перезагрузить мозг
                 </button>
               </div>
@@ -752,11 +744,7 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-md px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
-                <button
-                  type="button"
-                  onClick={handleGoalsNext}
-                  className="min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-6 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
-                >
+                <button type="button" onClick={handleGoalsNext} className="primary-cta">
                   Далее
                 </button>
               </div>
@@ -815,11 +803,7 @@ export default function OnboardingPage() {
                 )}
               </ol>
               <div className="mt-auto pt-6">
-                <button
-                  type="button"
-                  onClick={handleOpenApp}
-                  className="min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-6 py-3 text-base font-semibold text-white shadow-[0_14px_30px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
-                >
+                <button type="button" onClick={handleOpenApp} className="primary-cta">
                   Открыть приложение
                 </button>
               </div>

@@ -292,9 +292,9 @@ export default function SosPage() {
               return (
                 <label
                   key={trigger}
-                  className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition duration-200 ease-out ${
+                className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition duration-200 ease-out ${
                     checked
-                      ? 'border-amber-300/40 bg-[#1C1C1F] text-white'
+                      ? 'border-amber-300/40 bg-[#232327] text-white'
                       : 'border-white/10 bg-[#151517] text-[#D4D4D8] hover:bg-[#1A1A1D]'
                   }`}
                 >
@@ -325,7 +325,7 @@ export default function SosPage() {
                   setShowReward(false);
                   setScreen('timer');
                 }}
-                className="min-h-14 w-full rounded-3xl border border-amber-300/25 bg-[#1C1C1F] py-4 text-base font-semibold text-white shadow-[0_16px_36px_rgba(0,0,0,0.4)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+                className="primary-cta min-h-14 rounded-3xl py-4"
               >
                 Далее
               </button>
@@ -372,7 +372,7 @@ export default function SosPage() {
           aria-modal="true"
           aria-labelledby="sos-reward-title"
         >
-          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+          <div className="surface-card w-full max-w-sm p-6">
             <p
               id="sos-reward-title"
               className="text-flow text-center text-base font-medium text-white"
@@ -394,7 +394,7 @@ export default function SosPage() {
                 rewardGivenRef.current = false;
                 router.replace('/');
               }}
-              className="mt-8 w-full min-h-14 rounded-2xl bg-[#1C1C1F] py-4 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#242428]"
+              className="primary-cta mt-8 min-h-14 py-4"
             >
               Собрать опыт
             </button>

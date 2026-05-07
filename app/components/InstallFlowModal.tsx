@@ -60,7 +60,7 @@ export function InstallFlowModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#151517] p-6 shadow-[0_24px_50px_rgba(0,0,0,0.45)] sm:p-7">
+      <div className="surface-card w-full max-w-md p-6 sm:p-7">
         {screen === 'device' ? (
           <>
             <h2 className="text-title text-measure text-center text-2xl font-semibold text-white">
@@ -107,7 +107,7 @@ export function InstallFlowModal({
             <button
               type="button"
               onClick={onFinish}
-              className="mt-6 min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-3 text-base font-semibold text-white transition duration-200 ease-out hover:brightness-110"
+              className="primary-cta mt-6"
             >
               Открыть приложение
             </button>
@@ -133,7 +133,7 @@ export function InstallFlowModal({
             <button
               type="button"
               onClick={onFinish}
-              className="mt-6 min-h-12 w-full rounded-2xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-3 text-base font-semibold text-white transition duration-200 ease-out hover:brightness-110"
+              className="primary-cta mt-6"
             >
               Открыть приложение
             </button>
@@ -144,7 +144,7 @@ export function InstallFlowModal({
           <button
             type="button"
             onClick={onSkip}
-            className="mt-4 block w-full text-center text-sm text-[#9A9AA0] transition duration-200 ease-out hover:text-white"
+            className="secondary-link mt-4 no-underline"
           >
             {skipLabel}
           </button>
@@ -152,7 +152,7 @@ export function InstallFlowModal({
           <button
             type="button"
             onClick={onClose}
-            className="mt-4 block w-full text-center text-sm text-[#9A9AA0] underline underline-offset-4 transition duration-200 ease-out hover:text-white"
+            className="secondary-link mt-4"
           >
             Отмена
           </button>

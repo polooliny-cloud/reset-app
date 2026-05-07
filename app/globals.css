@@ -85,6 +85,13 @@
 :root {
   --background: #0b0b0c;
   --foreground: #ffffff;
+  --surface-1: #151517;
+  --surface-2: #1c1c1f;
+  --text-muted: #9a9aa0;
+  --text-soft: #c8c8ce;
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --accent-warm: rgb(245 158 11);
+  --accent-warm-soft: rgba(245, 158, 11, 0.2);
 }
 
 @theme inline {
@@ -106,5 +113,54 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+@layer components {
+  .surface-card {
+    border-radius: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--surface-1);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+  }
+
+  .primary-cta {
+    min-height: 3rem;
+    width: 100%;
+    border-radius: 1rem;
+    border: 1px solid var(--accent-warm-soft);
+    background: var(--surface-2);
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+
+  .primary-cta:hover {
+    filter: brightness(1.08);
+  }
+
+  .primary-cta:active {
+    transform: scale(0.99);
+  }
+
+  .secondary-link {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+
+  .secondary-link:hover {
+    color: #fff;
+  }
 }
