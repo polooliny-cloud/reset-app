@@ -247,71 +247,64 @@ export default function OnboardingPage() {
   const [platform, setPlatform] = useState<Platform | null>(null);
   const onboardingCompleteSent = useRef(false);
 
-  const screenNumber =
-    stage === 'welcome'
-      ? 1
-      : stage === 'question'
-        ? 2 + questionIndex
-        : stage === 'symptoms'
-          ? 8
-          : stage === 'harm'
-            ? 9 + harmIndex
-            : stage === 'features'
-              ? 14 + featuresIndex
-              : stage === 'goals'
-                ? 20
-                : stage === 'install'
-                  ? 21
-                  : 22;
-
   useEffect(() => {
-    if (stage !== 'welcome') return;
-    const key = `welcome:${screenNumber}`;
+    if (stage !== 'question') return;
+    const question = questionIndex + 1;
+    const key = `question:${question}`;
     if (viewedScreenEvents.has(key)) return;
     viewedScreenEvents.add(key);
-    captureEvent('welcome_screen_viewed', { screen_number: screenNumber });
-  }, [screenNumber, stage]);
+    captureEvent('onboarding_question_viewed', { question });
+  }, [questionIndex, stage]);
+
+  useEffect(() => {
+    if (stage !== 'symptoms') return;
+    const key = 'symptoms_screen';
+    if (viewedScreenEvents.has(key)) return;
+    viewedScreenEvents.add(key);
+    captureEvent('symptoms_screen_viewed');
+  }, [stage]);
 
   useEffect(() => {
     if (stage !== 'harm') return;
-    const key = `harm:${harmIndex}`;
+    const slide = harmIndex + 1;
+    const key = `damage:${slide}`;
     if (viewedScreenEvents.has(key)) return;
     viewedScreenEvents.add(key);
-    captureEvent('harm_slide_viewed', {
-      screen_number: screenNumber,
-      slide_number: harmIndex + 1,
-    });
-  }, [harmIndex, screenNumber, stage]);
+    captureEvent('damage_slide_viewed', { slide });
+  }, [harmIndex, stage]);
 
   useEffect(() => {
     if (stage !== 'features') return;
-    const key = `features:${featuresIndex}`;
+    const slide = featuresIndex + 1;
+    const key = `benefits:${slide}`;
     if (viewedScreenEvents.has(key)) return;
     viewedScreenEvents.add(key);
-    captureEvent('features_slide_viewed', {
-      screen_number: screenNumber,
-      slide_number: featuresIndex + 1,
-    });
-  }, [featuresIndex, screenNumber, stage]);
+    captureEvent('benefits_slide_viewed', { slide });
+  }, [featuresIndex, stage]);
+
+  useEffect(() => {
+    if (stage !== 'goals') return;
+    const key = 'goals_screen';
+    if (viewedScreenEvents.has(key)) return;
+    viewedScreenEvents.add(key);
+    captureEvent('goals_screen_viewed');
+  }, [stage]);
 
   useEffect(() => {
     if (stage !== 'install') return;
-    const key = `install:${screenNumber}`;
+    const key = 'install_screen';
     if (viewedScreenEvents.has(key)) return;
     viewedScreenEvents.add(key);
-    captureEvent('install_screen_viewed', { screen_number: screenNumber });
-  }, [screenNumber, stage]);
+    captureEvent('install_screen_viewed');
+  }, [stage]);
 
   useEffect(() => {
     if (stage !== 'installInstruction' || !platform) return;
     const key = `instruction:${platform}`;
     if (viewedScreenEvents.has(key)) return;
     viewedScreenEvents.add(key);
-    captureEvent('install_instruction_viewed', {
-      screen_number: screenNumber,
-      platform,
-    });
-  }, [platform, screenNumber, stage]);
+    captureEvent('install_instruction_viewed', { platform });
+  }, [platform, stage]);
 
   function completeOnboarding() {
     let alreadySent = onboardingCompleteSent.current;
@@ -336,7 +329,6 @@ export default function OnboardingPage() {
       // ignore
     }
     captureEvent('onboarding_completed', {
-      screen_number: screenNumber,
       platform,
     });
   }
@@ -344,6 +336,7 @@ export default function OnboardingPage() {
   function toggleSymptom(item: string) {
     setSelectedSymptoms((prev) => {
       if (prev.includes(item)) return prev.filter((v) => v !== item);
+      captureEvent('symptom_selected', { symptom: item });
       return [...prev, item];
     });
   }
@@ -351,6 +344,7 @@ export default function OnboardingPage() {
   function toggleGoal(goal: string) {
     setSelectedGoals((prev) => {
       if (prev.includes(goal)) return prev.filter((v) => v !== goal);
+      captureEvent('goal_selected', { goal });
       return [...prev, goal];
     });
   }
@@ -373,9 +367,8 @@ export default function OnboardingPage() {
   function handleQuestionNext() {
     const answer = questionAnswers[questionIndex];
     if (!answer) return;
-    captureEvent('question_answered', {
-      screen_number: screenNumber,
-      question_number: questionIndex + 1,
+    captureEvent('onboarding_question_answered', {
+      question: questionIndex + 1,
       answer,
     });
     if (isLastQuestion) {
@@ -386,10 +379,7 @@ export default function OnboardingPage() {
   }
 
   function handleSkipQuestion() {
-    captureEvent('question_skipped', {
-      screen_number: screenNumber,
-      question_number: questionIndex + 1,
-    });
+    captureEvent('onboarding_question_skipped', { question: questionIndex + 1 });
     if (questionIndex === questions.length - 1) {
       setStage('symptoms');
       return;
@@ -398,35 +388,24 @@ export default function OnboardingPage() {
   }
 
   function handleSymptomsNext() {
-    captureEvent('symptoms_selected', {
-      screen_number: screenNumber,
-      selected_count: selectedSymptoms.length,
-    });
-    captureEvent('brain_reset_started', {
-      screen_number: screenNumber,
-      selected_count: selectedSymptoms.length,
-    });
+    captureEvent('symptoms_completed', { selected_count: selectedSymptoms.length });
     setStage('harm');
   }
 
   function handleGoalsNext() {
-    captureEvent('goals_selected', {
-      screen_number: screenNumber,
-      selected_count: selectedGoals.length,
-    });
+    captureEvent('goals_completed', { selected_count: selectedGoals.length });
     setStage('install');
   }
 
   function handlePlatformSelect(nextPlatform: Platform) {
     setPlatform(nextPlatform);
-    captureEvent('platform_selected', {
-      screen_number: screenNumber,
-      platform: nextPlatform,
-    });
+    captureEvent('install_platform_selected', { platform: nextPlatform });
     setStage('installInstruction');
   }
 
   function handleOpenApp() {
+    if (onboardingCompleteSent.current) return;
+    captureEvent('install_flow_completed', { platform });
     completeOnboarding();
     router.replace('/');
   }
@@ -692,6 +671,7 @@ export default function OnboardingPage() {
                 setHarmIndex((prev) => prev + 1);
                 return;
               }
+              captureEvent('damage_block_completed');
               setStage('features');
             })
           : null}
@@ -706,6 +686,7 @@ export default function OnboardingPage() {
                   setFeaturesIndex((prev) => prev + 1);
                   return;
                 }
+                captureEvent('benefits_block_completed');
                 setStage('goals');
               },
             )
