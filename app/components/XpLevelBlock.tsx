@@ -6,7 +6,7 @@ import {
 } from '@/lib/progression';
 
 const barGradient =
-  'linear-gradient(90deg, rgb(245 158 11), rgb(249 115 22), rgb(234 88 12))';
+  'linear-gradient(90deg, rgb(139 92 246), rgb(167 139 250), rgb(196 181 253))';
 
 type Variant = 'home' | 'stats';
 

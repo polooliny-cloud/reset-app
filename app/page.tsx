@@ -212,7 +212,7 @@ export default function Home() {
             className="pointer-events-none absolute inset-0 z-0"
             style={{
               background:
-                'radial-gradient(circle at 50% 50%, rgba(255, 140, 0, 0.05), transparent 68%)',
+                'radial-gradient(circle at 50% 40%, rgba(167, 139, 250, 0.14), transparent 66%)',
             }}
           />
           <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center pt-10">
@@ -265,7 +265,7 @@ export default function Home() {
             className="pointer-events-none absolute inset-0 z-0"
             style={{
               background:
-                'radial-gradient(circle at 50% 35%, rgba(255, 140, 0, 0.06), transparent 64%)',
+                'radial-gradient(circle at 50% 35%, rgba(167, 139, 250, 0.14), transparent 64%)',
             }}
           />
           <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-10">
@@ -317,7 +317,7 @@ export default function Home() {
                       value={deadlineDaysInput}
                       onChange={(e) => handleDaysChange(e.target.value)}
                       placeholder="0"
-                      className="h-12 w-full rounded-2xl border border-white/10 bg-[#1C1C1F] px-4 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-[#707077] focus:border-white/20"
+                      className="glass-input h-12 w-full px-4 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-slate-500 focus:border-violet-300/40"
                     />
                   </div>
 
@@ -336,7 +336,7 @@ export default function Home() {
                       value={deadlineHoursInput}
                       onChange={(e) => handleHoursChange(e.target.value)}
                       placeholder="0"
-                      className="h-12 w-full rounded-2xl border border-white/10 bg-[#1C1C1F] px-4 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-[#707077] focus:border-white/20"
+                      className="glass-input h-12 w-full px-4 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-slate-500 focus:border-violet-300/40"
                     />
                   </div>
                 </div>
@@ -357,7 +357,7 @@ export default function Home() {
           className="pointer-events-none absolute inset-0 z-0"
           style={{
             background:
-              'radial-gradient(circle at 50% 30%, rgba(255, 140, 0, 0.08), transparent 60%)',
+              'radial-gradient(circle at 50% 28%, rgba(167, 139, 250, 0.16), transparent 58%)',
           }}
         />
         <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-12">
@@ -365,7 +365,7 @@ export default function Home() {
           type="button"
           onClick={() => setScreen('deadline')}
           aria-label="Срок воздержания"
-          className="absolute inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#1C1C1F] text-white/85 shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition duration-200 ease-out hover:scale-[1.02] hover:bg-[#242428] active:scale-95"
+          className="absolute inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/70 text-slate-100/90 shadow-[0_10px_24px_rgba(2,6,23,0.4)] backdrop-blur-md transition duration-200 ease-out hover:scale-[1.02] hover:bg-slate-800/75 active:scale-95"
           style={{ top: topInset, right: `calc(${rightInset} + 72px)` }}
         >
           <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
@@ -390,7 +390,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => setScreen('wins')}
-          className="absolute inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-[#1C1C1F] px-3 py-1.5 text-[#F1B45C] shadow-[0_8px_20px_rgba(0,0,0,0.25)] transition duration-200 ease-out hover:scale-[1.02] hover:bg-[#242428] active:scale-95"
+          className="absolute inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-slate-300/20 bg-slate-900/70 px-3 py-1.5 text-violet-300 shadow-[0_10px_24px_rgba(2,6,23,0.4)] backdrop-blur-md transition duration-200 ease-out hover:scale-[1.02] hover:bg-slate-800/75 active:scale-95"
           style={{ top: topInset, right: rightInset }}
           aria-label={`Побед: ${wins}`}
         >
@@ -431,7 +431,7 @@ export default function Home() {
                       style={{
                         width: `${brainPercent}%`,
                         background:
-                          'linear-gradient(90deg, rgb(245 158 11), rgb(249 115 22), rgb(234 88 12))',
+                          'linear-gradient(90deg, rgb(139 92 246), rgb(167 139 250), rgb(196 181 253))',
                       }}
                     />
                   </div>
@@ -468,7 +468,7 @@ export default function Home() {
                 incrementMetric('sos_click');
                 captureEvent('sos_click');
               }}
-              className="block w-full rounded-3xl border border-amber-300/20 bg-[#1C1C1F] px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_20px_40px_rgba(0,0,0,0.35)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+              className="block w-full rounded-3xl border border-violet-300/30 bg-slate-900/75 px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_22px_42px_rgba(2,6,23,0.45)] backdrop-blur-md transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
             >
               Тревожная кнопка
             </Link>
@@ -501,14 +501,14 @@ export default function Home() {
               <button
                 type="button"
                 onClick={handleConfirmReset}
-                className="flex-1 rounded-2xl bg-[#8A3E18] py-3 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#9A4920]"
+                className="glass-danger flex-1 py-3 text-base font-semibold text-white transition duration-200 ease-out hover:brightness-110"
               >
                 Сбросить
               </button>
               <button
                 type="button"
                 onClick={() => setShowResetModal(false)}
-                className="flex-1 rounded-2xl border border-white/15 bg-[#1C1C1F] py-3 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#26262A]"
+                className="selection-card flex-1 py-3 text-base font-semibold text-white"
               >
                 Отмена
               </button>

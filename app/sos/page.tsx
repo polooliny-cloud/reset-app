@@ -249,7 +249,7 @@ export default function SosPage() {
           className="pointer-events-none absolute inset-0 z-0"
           style={{
             background:
-              'radial-gradient(circle at 50% 70%, rgba(255, 140, 0, 0.06), transparent 72%)',
+              'radial-gradient(circle at 50% 70%, rgba(167, 139, 250, 0.14), transparent 72%)',
           }}
         />
       ) : null}
@@ -294,13 +294,13 @@ export default function SosPage() {
                   key={trigger}
                 className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition duration-200 ease-out ${
                     checked
-                      ? 'border-amber-300/40 bg-[#232327] text-white'
-                      : 'border-white/10 bg-[#151517] text-[#D4D4D8] hover:bg-[#1A1A1D]'
+                      ? 'selection-card selection-card-active text-white'
+                      : 'selection-card text-[#D4DDEB]'
                   }`}
                 >
                   <input
                     type="checkbox"
-                    className="h-4 w-4 accent-amber-400"
+                    className="h-4 w-4 accent-violet-400"
                     checked={checked}
                     onChange={() => toggleTrigger(trigger)}
                   />
@@ -339,7 +339,7 @@ export default function SosPage() {
             className="pointer-events-none absolute left-1/2 top-1/2 z-0 w-[min(100%,22rem)] aspect-square max-h-[min(80vh,22rem)] -translate-x-1/2 -translate-y-1/2"
             style={{
               background:
-                'radial-gradient(ellipse at center, rgba(245, 158, 11, 0.1) 0%, rgba(11, 11, 12, 0) 65%)',
+                'radial-gradient(ellipse at center, rgba(167, 139, 250, 0.14) 0%, rgba(11, 11, 12, 0) 65%)',
             }}
           />
           <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center px-4 pt-10 text-center">

@@ -16,7 +16,7 @@ export function OnboardingDevReset() {
         }
         window.location.reload();
       }}
-      className="fixed bottom-3 left-3 z-[9999] rounded-lg border border-amber-700/40 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-950 shadow-sm hover:bg-amber-100"
+      className="fixed bottom-3 left-3 z-[9999] rounded-lg border border-violet-500/40 bg-violet-100 px-2 py-1 text-xs font-medium text-violet-950 shadow-sm hover:bg-violet-200"
     >
       Сбросить онбординг
     </button>

@@ -484,9 +484,9 @@ export default function OnboardingPage() {
   const carouselTheme =
     stage === 'harm'
       ? harmIndex < harmSlides.length - 1
-        ? 'radial-gradient(circle at 50% 24%, rgba(220, 38, 38, 0.3), rgba(59, 7, 10, 0.88) 68%, rgba(11, 11, 12, 1) 100%)'
-        : 'radial-gradient(circle at 50% 24%, rgba(59, 130, 246, 0.24), rgba(15, 23, 42, 0.86) 68%, rgba(11, 11, 12, 1) 100%)'
-      : 'radial-gradient(circle at 50% 24%, rgba(255, 140, 0, 0.08), transparent 62%)';
+        ? 'radial-gradient(circle at 52% 22%, rgba(248, 113, 113, 0.24), rgba(69, 10, 10, 0.84) 66%, rgba(9, 12, 20, 1) 100%)'
+        : 'radial-gradient(circle at 50% 22%, rgba(167, 139, 250, 0.2), rgba(30, 41, 59, 0.86) 66%, rgba(9, 12, 20, 1) 100%)'
+      : 'radial-gradient(circle at 50% 20%, rgba(167, 139, 250, 0.12), rgba(9, 12, 20, 0) 60%)';
 
   function renderQuestionScreen() {
     return (
@@ -508,8 +508,8 @@ export default function OnboardingPage() {
                   onClick={() => handleQuestionAnswer(option)}
                   className={`min-h-12 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition duration-200 ease-out ${
                     selectedAnswer === option
-                      ? 'border-amber-300/35 bg-[#232327] text-white'
-                      : 'border-white/10 bg-[#1C1C1F] text-[#E5E5E8] hover:bg-[#25252A]'
+                      ? 'selection-card selection-card-active text-white'
+                      : 'selection-card text-[#E2E8F0]'
                   }`}
                 >
                   {option}
@@ -525,7 +525,7 @@ export default function OnboardingPage() {
               className={`primary-cta ${
                 selectedAnswer
                   ? ''
-                  : 'cursor-not-allowed border-white/10 bg-[#1C1C1F]/70 text-white/45 hover:brightness-100'
+                  : 'cursor-not-allowed border-slate-400/20 bg-slate-900/60 text-white/45 hover:brightness-100'
               }`}
             >
               {isLastQuestion ? 'Завершить тест' : 'Далее'}
@@ -554,18 +554,18 @@ export default function OnboardingPage() {
     return (
       <>
         <BackButton onClick={handleBack} />
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col pt-[calc(60px+env(safe-area-inset-top))] pb-[calc(12px+env(safe-area-inset-bottom))]">
-          <div className="animate-onboarding-step flex flex-1 flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 shadow-[0_22px_48px_rgba(0,0,0,0.42)]">
-            <div className="flex min-h-[44%] flex-col items-center justify-center px-6 pb-4 pt-10">
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col pt-[calc(52px+env(safe-area-inset-top))] pb-[calc(10px+env(safe-area-inset-bottom))]">
+          <div className="animate-onboarding-step flex flex-1 flex-col overflow-hidden rounded-[2rem] border border-slate-300/15 bg-slate-950/40 shadow-[0_24px_54px_rgba(3,7,18,0.58)] backdrop-blur-sm">
+            <div className="flex min-h-[40%] flex-col items-center justify-center px-6 pb-3 pt-8">
               <p className="text-sm uppercase tracking-[0.18em] text-white/75">Reset</p>
-              <p className="mt-7 text-6xl sm:text-7xl">{slide.emoji}</p>
+              <p className="mt-5 text-6xl sm:text-7xl">{slide.emoji}</p>
             </div>
-            <div className="flex flex-1 flex-col justify-between rounded-t-[2rem] bg-[#121214]/80 px-6 pb-6 pt-7 backdrop-blur-sm">
+            <div className="flex flex-1 flex-col justify-between rounded-t-[2rem] bg-slate-950/55 px-6 pb-4 pt-5 backdrop-blur-md">
               <div>
                 <h2 className="text-title text-measure text-center text-2xl font-semibold text-white">
                   {slide.title}
                 </h2>
-                <div className="mt-4 space-y-2">
+                <div className="mt-3 space-y-1.5">
                   {slide.text.map((line) => (
                     <p
                       key={line}
@@ -577,11 +577,13 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div>
-                <Dots count={total} active={active} />
+                <div className="pt-1">
+                  <Dots count={total} active={active} />
+                </div>
                 <button
                   type="button"
                   onClick={onNext}
-                  className="primary-cta mt-5"
+                  className="primary-cta mt-4"
                 >
                   Далее
                 </button>
@@ -628,7 +630,7 @@ export default function OnboardingPage() {
             <div className="mx-auto flex w-full max-w-md flex-1 flex-col pt-[calc(70px+env(safe-area-inset-top))]">
               <div className="animate-onboarding-step flex min-h-0 flex-1 flex-col">
                 <h1 className="text-center text-2xl font-semibold text-white">Симптомы</h1>
-                <div className="mt-4 rounded-2xl border border-red-400/20 bg-[#2A1115] px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.24)]">
+                <div className="glass-danger mt-4 px-4 py-3">
                   <p className="text-body text-measure text-center text-sm text-[#FFB6BD]">
                     Чрезмерное использование порно может иметь негативные психологические
                     последствия.
@@ -652,16 +654,16 @@ export default function OnboardingPage() {
                                 key={item}
                                 type="button"
                                 onClick={() => toggleSymptom(item)}
-                                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition duration-200 ease-out ${
+                                className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm transition duration-200 ease-out ${
                                   checked
-                                    ? 'border-amber-300/35 bg-[#1C1C1F] text-white'
-                                    : 'border-white/10 bg-[#151517] text-[#D4D4D8] hover:bg-[#1A1A1D]'
+                                    ? 'selection-card selection-card-active text-white'
+                                    : 'selection-card text-[#D4DDEB]'
                                 }`}
                               >
                                 <span
                                   className={`h-4 w-4 rounded border transition ${
                                     checked
-                                      ? 'border-amber-300/50 bg-amber-300/20'
+                                      ? 'border-violet-300/70 bg-violet-300/25'
                                       : 'border-white/30'
                                   }`}
                                 />
@@ -726,15 +728,15 @@ export default function OnboardingPage() {
                         key={goal}
                         type="button"
                         onClick={() => toggleGoal(goal)}
-                        className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition duration-200 ease-out ${
+                        className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm transition duration-200 ease-out ${
                           checked
-                            ? 'border-amber-300/35 bg-[#1C1C1F] text-white'
-                            : 'border-white/10 bg-[#151517] text-[#D4D4D8] hover:bg-[#1A1A1D]'
+                            ? 'selection-card selection-card-active text-white'
+                            : 'selection-card text-[#D4DDEB]'
                         }`}
                       >
                         <span
                           className={`h-4 w-4 rounded border transition ${
-                            checked ? 'border-amber-300/50 bg-amber-300/20' : 'border-white/30'
+                            checked ? 'border-violet-300/70 bg-violet-300/25' : 'border-white/30'
                           }`}
                         />
                         <span className="text-body">{goal}</span>
@@ -763,14 +765,14 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() => handlePlatformSelect('android')}
-                  className="min-h-14 w-full rounded-2xl border border-white/10 bg-[#1C1C1F] px-5 py-4 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#232327]"
+                  className="selection-card min-h-14 w-full px-5 py-4 text-base font-semibold text-white"
                 >
                   Android
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePlatformSelect('ios')}
-                  className="min-h-14 w-full rounded-2xl border border-white/10 bg-[#1C1C1F] px-5 py-4 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#232327]"
+                  className="selection-card min-h-14 w-full px-5 py-4 text-base font-semibold text-white"
                 >
                   iPhone
                 </button>
@@ -787,7 +789,7 @@ export default function OnboardingPage() {
               <p className="text-body text-measure mt-2 text-center text-sm text-[#9A9AA0]">
                 Это займет 10 секунд
               </p>
-              <ol className="text-body mt-7 space-y-4 rounded-3xl border border-white/5 bg-[#151517] p-5 text-sm text-[#D4D4D8]">
+              <ol className="text-body mt-7 space-y-4 rounded-3xl border border-slate-300/20 bg-slate-900/60 p-5 text-sm text-[#D4D4D8] backdrop-blur-md">
                 {platform === 'android' ? (
                   <>
                     <li>1. Нажми на три точки в правом верхнем углу браузера</li>

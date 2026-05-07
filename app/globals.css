@@ -83,15 +83,15 @@
 }
 
 :root {
-  --background: #0b0b0c;
+  --background: #090c14;
   --foreground: #ffffff;
-  --surface-1: #151517;
-  --surface-2: #1c1c1f;
-  --text-muted: #9a9aa0;
-  --text-soft: #c8c8ce;
-  --border-subtle: rgba(255, 255, 255, 0.1);
-  --accent-warm: rgb(245 158 11);
-  --accent-warm-soft: rgba(245, 158, 11, 0.2);
+  --surface-1: rgba(17, 24, 39, 0.72);
+  --surface-2: rgba(30, 41, 59, 0.7);
+  --text-muted: #95a0b8;
+  --text-soft: #c5cddd;
+  --border-subtle: rgba(148, 163, 184, 0.24);
+  --accent-violet: rgb(167 139 250);
+  --accent-violet-soft: rgba(167, 139, 250, 0.28);
 }
 
 @theme inline {
@@ -105,13 +105,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #090c14;
     --foreground: #ededed;
   }
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(167, 139, 250, 0.12), transparent 38%),
+    radial-gradient(circle at 82% 4%, rgba(139, 92, 246, 0.16), transparent 44%),
+    linear-gradient(180deg, #090c14 0%, #0b1020 48%, #090d18 100%);
   color: var(--foreground);
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -120,28 +123,36 @@ body {
 @layer components {
   .surface-card {
     border-radius: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
     background: var(--surface-1);
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(20px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 22px 48px rgba(3, 7, 18, 0.5);
   }
 
   .primary-cta {
     min-height: 3rem;
     width: 100%;
     border-radius: 1rem;
-    border: 1px solid var(--accent-warm-soft);
-    background: var(--surface-2);
+    border: 1px solid var(--accent-violet-soft);
+    background:
+      linear-gradient(180deg, rgba(51, 65, 85, 0.85), rgba(30, 41, 59, 0.84)),
+      var(--surface-2);
     padding: 0.75rem 1.5rem;
     font-size: 1rem;
     font-weight: 600;
     color: #fff;
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+    box-shadow:
+      inset 0 1px 0 rgba(221, 214, 254, 0.26),
+      0 16px 32px rgba(2, 6, 23, 0.46);
     transition-duration: 200ms;
     transition-timing-function: ease-out;
   }
 
   .primary-cta:hover {
-    filter: brightness(1.08);
+    filter: brightness(1.06);
+    border-color: rgba(196, 181, 253, 0.48);
   }
 
   .primary-cta:active {
@@ -162,5 +173,40 @@ body {
 
   .secondary-link:hover {
     color: #fff;
+  }
+
+  .selection-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(14px);
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+
+  .selection-card:hover {
+    background: rgba(30, 41, 59, 0.52);
+  }
+
+  .selection-card-active {
+    border-color: rgba(167, 139, 250, 0.5);
+    background: rgba(30, 41, 59, 0.86);
+    box-shadow: inset 0 0 0 1px rgba(196, 181, 253, 0.22);
+  }
+
+  .glass-input {
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(15, 23, 42, 0.62);
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-danger {
+    border-radius: 1rem;
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    background: linear-gradient(180deg, rgba(69, 10, 10, 0.62), rgba(127, 29, 29, 0.42));
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 0 rgba(254, 202, 202, 0.12);
   }
 }

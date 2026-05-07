@@ -73,14 +73,14 @@ export function InstallFlowModal({
               <button
                 type="button"
                 onClick={() => handleSelect('ios')}
-                className="min-h-14 w-full rounded-2xl border border-white/10 bg-[#1C1C1F] px-5 py-4 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#232327]"
+                className="selection-card min-h-14 w-full px-5 py-4 text-base font-semibold text-white"
               >
                 iPhone
               </button>
               <button
                 type="button"
                 onClick={() => handleSelect('android')}
-                className="min-h-14 w-full rounded-2xl border border-white/10 bg-[#1C1C1F] px-5 py-4 text-base font-semibold text-white transition duration-200 ease-out hover:bg-[#232327]"
+                className="selection-card min-h-14 w-full px-5 py-4 text-base font-semibold text-white"
               >
                 Android
               </button>
