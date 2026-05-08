@@ -83,10 +83,12 @@
 }
 
 :root {
-  --background: #090c14;
+  --background: #090d14;
+  --background-solid: #090d14;
+  --background-elevated: #0d1320;
   --foreground: #ffffff;
-  --surface-1: rgba(17, 24, 39, 0.72);
-  --surface-2: rgba(30, 41, 59, 0.7);
+  --surface-1: rgba(15, 21, 33, 0.84);
+  --surface-2: rgba(25, 35, 54, 0.82);
   --text-muted: #95a0b8;
   --text-soft: #c5cddd;
   --border-subtle: rgba(148, 163, 184, 0.24);
@@ -105,30 +107,64 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #090c14;
+    --background: #090d14;
+    --background-solid: #090d14;
+    --background-elevated: #0d1320;
     --foreground: #ededed;
   }
 }
 
+html,
+body {
+  min-height: 100%;
+  background-color: var(--background-solid);
+}
+
 body {
   background:
-    radial-gradient(circle at 18% 12%, rgba(167, 139, 250, 0.12), transparent 38%),
-    radial-gradient(circle at 82% 4%, rgba(139, 92, 246, 0.16), transparent 44%),
-    linear-gradient(180deg, #090c14 0%, #0b1020 48%, #090d18 100%);
+    radial-gradient(circle at 20% 12%, rgba(120, 95, 180, 0.12), transparent 42%),
+    radial-gradient(circle at 82% 6%, rgba(104, 79, 162, 0.1), transparent 46%),
+    linear-gradient(180deg, #090d14 0%, #0c121e 46%, #0a0f18 100%);
+  background-color: var(--background-solid);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
 }
 
 @layer components {
+  .app-shell {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background-color: transparent;
+  }
+
+  .app-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(120, 95, 180, 0.14), transparent 58%),
+      radial-gradient(circle at 8% 82%, rgba(69, 53, 110, 0.1), transparent 54%);
+    opacity: 0.92;
+  }
+
+  .app-shell > * {
+    position: relative;
+    z-index: 1;
+  }
+
   .surface-card {
     border-radius: 1.5rem;
     border: 1px solid var(--border-subtle);
     background: var(--surface-1);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(10px);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 22px 48px rgba(3, 7, 18, 0.5);
+      0 12px 26px rgba(3, 7, 18, 0.32);
   }
 
   .primary-cta {
@@ -145,7 +181,7 @@ body {
     color: #fff;
     box-shadow:
       inset 0 1px 0 rgba(221, 214, 254, 0.26),
-      0 16px 32px rgba(2, 6, 23, 0.46);
+      0 10px 22px rgba(2, 6, 23, 0.34);
     transition-duration: 200ms;
     transition-timing-function: ease-out;
   }
@@ -178,8 +214,8 @@ body {
   .selection-card {
     border-radius: 1rem;
     border: 1px solid rgba(148, 163, 184, 0.2);
-    background: rgba(15, 23, 42, 0.55);
-    backdrop-filter: blur(14px);
+    background: rgba(15, 23, 42, 0.66);
+    backdrop-filter: blur(7px);
     transition-duration: 200ms;
     transition-timing-function: ease-out;
   }
@@ -198,7 +234,7 @@ body {
     border-radius: 1rem;
     border: 1px solid rgba(148, 163, 184, 0.22);
     background: rgba(15, 23, 42, 0.62);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(5px);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
@@ -206,7 +242,7 @@ body {
     border-radius: 1rem;
     border: 1px solid rgba(248, 113, 113, 0.3);
     background: linear-gradient(180deg, rgba(69, 10, 10, 0.62), rgba(127, 29, 29, 0.42));
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(5px);
     box-shadow: inset 0 1px 0 rgba(254, 202, 202, 0.12);
   }
 }

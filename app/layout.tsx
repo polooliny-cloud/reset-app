@@ -38,13 +38,13 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased bg-[#090d14]`}
     >
       <head>
         <link rel="icon" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col bg-[#090d14] text-white [color-scheme:dark]">
         <PostHogProvider>
           <AnalyticsAppMount />
           <OnboardingGate>{children}</OnboardingGate>

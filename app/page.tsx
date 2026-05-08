@@ -206,21 +206,13 @@ export default function Home() {
   return (
     <>
       {screen === 'wins' ? (
-        <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-8 pt-6 sm:px-6">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 z-0"
-            style={{
-              background:
-                'radial-gradient(circle at 50% 40%, rgba(167, 139, 250, 0.14), transparent 66%)',
-            }}
-          />
+        <main className="app-shell flex min-h-screen flex-col px-4 pb-8 pt-6 sm:px-6">
           <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center pt-10">
             <button
               type="button"
               onClick={() => setScreen('home')}
               aria-label="Назад"
-              className="fixed left-4 z-50 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
+              className="fixed left-4 z-50 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
               style={{ top: 'calc(16px + env(safe-area-inset-top))' }}
             >
               <svg
@@ -259,21 +251,13 @@ export default function Home() {
           </div>
         </main>
       ) : screen === 'deadline' ? (
-        <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-8 pt-6 sm:px-6">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 z-0"
-            style={{
-              background:
-                'radial-gradient(circle at 50% 35%, rgba(167, 139, 250, 0.14), transparent 64%)',
-            }}
-          />
+        <main className="app-shell flex min-h-screen flex-col px-4 pb-8 pt-6 sm:px-6">
           <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-10">
             <button
               type="button"
               onClick={() => setScreen('home')}
               aria-label="Назад"
-              className="fixed left-4 z-50 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
+              className="fixed left-4 z-50 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
               style={{ top: 'calc(16px + env(safe-area-inset-top))' }}
             >
               <svg
@@ -351,21 +335,13 @@ export default function Home() {
           </div>
         </main>
       ) : (
-      <main className="relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0B0B0C] px-4 pt-5 pb-6 sm:px-6">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 z-0"
-          style={{
-            background:
-              'radial-gradient(circle at 50% 28%, rgba(167, 139, 250, 0.16), transparent 58%)',
-          }}
-        />
+      <main className="app-shell flex min-h-screen flex-col px-4 pb-6 pt-5 sm:px-6">
         <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-12">
         <button
           type="button"
           onClick={() => setScreen('deadline')}
           aria-label="Срок воздержания"
-          className="absolute inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/70 text-slate-100/90 shadow-[0_10px_24px_rgba(2,6,23,0.4)] backdrop-blur-md transition duration-200 ease-out hover:scale-[1.02] hover:bg-slate-800/75 active:scale-95"
+          className="absolute inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/78 text-slate-100/90 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
           style={{ top: topInset, right: `calc(${rightInset} + 72px)` }}
         >
           <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
@@ -390,7 +366,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => setScreen('wins')}
-          className="absolute inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-slate-300/20 bg-slate-900/70 px-3 py-1.5 text-violet-300 shadow-[0_10px_24px_rgba(2,6,23,0.4)] backdrop-blur-md transition duration-200 ease-out hover:scale-[1.02] hover:bg-slate-800/75 active:scale-95"
+          className="absolute inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-slate-300/20 bg-slate-900/78 px-3 py-1.5 text-violet-300 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
           style={{ top: topInset, right: rightInset }}
           aria-label={`Побед: ${wins}`}
         >
@@ -468,7 +444,7 @@ export default function Home() {
                 incrementMetric('sos_click');
                 captureEvent('sos_click');
               }}
-              className="block w-full rounded-3xl border border-violet-300/30 bg-slate-900/75 px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_22px_42px_rgba(2,6,23,0.45)] backdrop-blur-md transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+              className="block w-full rounded-3xl border border-violet-300/30 bg-slate-900/80 px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_14px_30px_rgba(2,6,23,0.38)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
             >
               Тревожная кнопка
             </Link>
@@ -480,7 +456,7 @@ export default function Home() {
 
       {showResetModal && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-[#070a12]/72 p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="reset-modal-title"

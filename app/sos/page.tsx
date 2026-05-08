@@ -241,24 +241,14 @@ export default function SosPage() {
 
   return (
     <main
-      className={`${plex.className} relative isolate flex min-h-screen flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-8 pt-4 text-white`}
+      className={`${plex.className} app-shell flex min-h-screen flex-col px-4 pb-8 pt-4 text-white`}
     >
-      {screen === 'trigger' ? (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 z-0"
-          style={{
-            background:
-              'radial-gradient(circle at 50% 70%, rgba(167, 139, 250, 0.14), transparent 72%)',
-          }}
-        />
-      ) : null}
       <div className="relative z-10">
       <button
         type="button"
         onClick={() => router.push('/')}
         aria-label="Назад"
-        className="fixed left-4 z-50 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 backdrop-blur-sm transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
+        className="fixed left-4 z-50 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 transition duration-200 ease-out hover:bg-white/10 hover:text-white sm:left-6"
         style={{ top: 'calc(16px + env(safe-area-inset-top))' }}
       >
         <svg
@@ -336,10 +326,10 @@ export default function SosPage() {
         <div className="relative mx-auto w-full max-w-md min-h-screen shrink-0">
           <div
             aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 z-0 w-[min(100%,22rem)] aspect-square max-h-[min(80vh,22rem)] -translate-x-1/2 -translate-y-1/2"
+            className="pointer-events-none absolute left-1/2 top-1/2 z-0 aspect-square max-h-[min(80vh,20rem)] w-[min(100%,20rem)] -translate-x-1/2 -translate-y-1/2"
             style={{
               background:
-                'radial-gradient(ellipse at center, rgba(167, 139, 250, 0.14) 0%, rgba(11, 11, 12, 0) 65%)',
+                'radial-gradient(ellipse at center, rgba(120, 95, 180, 0.11) 0%, rgba(9, 13, 20, 0) 68%)',
             }}
           />
           <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center px-4 pt-10 text-center">
@@ -367,7 +357,7 @@ export default function SosPage() {
 
       {showReward ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#070a12]/72 p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="sos-reward-title"
