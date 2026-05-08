@@ -8,6 +8,14 @@ import { InstallFlowModal } from './components/InstallFlowModal';
 import { XpLevelBlock } from './components/XpLevelBlock';
 
 import { incrementMetric, trackEvent } from '@/lib/analytics';
+import {
+  MISSION_XP_REWARD,
+  formatMissionCountdown,
+  getMissionMeta,
+  getMissionRewardTitle,
+  getMissionSummary,
+  resolveMissionStatus,
+} from '@/lib/missions';
 import { captureEvent } from '@/lib/posthogCapture';
 import { getDaysWord } from '@/lib/utils';
 
@@ -15,6 +23,7 @@ const STORAGE_KEY = 'myapp_start_date';
 
 const WINS_KEY = 'wins';
 const XP_KEY = 'xp';
+const MISSION_CLAIMED_KEY = 'mission_claimed_count';
 
 type HomeScreen = 'home' | 'wins' | 'deadline';
 const EDGE_OFFSET = 16;
@@ -87,8 +96,12 @@ export default function Home() {
   const [screen, setScreen] = useState<HomeScreen>('home');
   const [wins, setWins] = useState(0);
   const [xp, setXp] = useState(0);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [streakStartMs, setStreakStartMs] = useState<number | null>(null);
+  const [claimedMissionCount, setClaimedMissionCount] = useState(0);
   const [daysCount, setDaysCount] = useState<number | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [missionModal, setMissionModal] = useState<'claim' | 'locked' | null>(null);
   const [showInstallFlow, setShowInstallFlow] = useState(false);
   const [deadlineDaysInput, setDeadlineDaysInput] = useState('');
   const [deadlineHoursInput, setDeadlineHoursInput] = useState('');
@@ -112,6 +125,7 @@ export default function Home() {
 
     const progress = getStreakProgress(startMs, nowMs);
     setDaysCount(progress.days);
+    setStreakStartMs(startMs);
   }, []);
 
   useEffect(() => {
@@ -122,6 +136,7 @@ export default function Home() {
     if (typeof window === 'undefined' || pathname !== '/') return;
     const w = localStorage.getItem(WINS_KEY);
     const x = localStorage.getItem(XP_KEY);
+    const claimed = localStorage.getItem(MISSION_CLAIMED_KEY);
     if (w !== null) {
       const n = Number(w);
       if (Number.isFinite(n)) setWins(n);
@@ -130,6 +145,18 @@ export default function Home() {
       const n = Number(x);
       if (Number.isFinite(n)) setXp(n);
     }
+    if (claimed !== null) {
+      const n = Number(claimed);
+      if (Number.isFinite(n) && n >= 0) setClaimedMissionCount(Math.floor(n));
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname !== '/') return;
+    const tick = () => setNowMs(Date.now());
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
   }, [pathname]);
 
   useEffect(() => {
@@ -148,8 +175,11 @@ export default function Home() {
     localStorage.removeItem('days');
     localStorage.removeItem(WINS_KEY);
     localStorage.removeItem(XP_KEY);
+    localStorage.removeItem(MISSION_CLAIMED_KEY);
     setWins(0);
     setXp(0);
+    setClaimedMissionCount(0);
+    setMissionModal(null);
     setShowResetModal(false);
     setScreen('home');
     syncLabelFromStorage();
@@ -187,6 +217,51 @@ export default function Home() {
     deadlineHours <= 24 &&
     (deadlineDays > 0 || deadlineHours > 0);
 
+  const elapsedMs = streakStartMs ? Math.max(nowMs - streakStartMs, 0) : 0;
+  const missionStatus = resolveMissionStatus(elapsedMs, claimedMissionCount);
+  const missionMeta = getMissionMeta(missionStatus.missionIndex);
+  const missionCountdown = formatMissionCountdown(missionStatus.missionRemainingMs);
+  const missionProgressPercent = Math.floor(missionStatus.missionProgress * 100);
+  const rewardMissionIndex = missionStatus.claimedCount;
+  const rewardTitle = getMissionRewardTitle(rewardMissionIndex);
+  const rewardSummary = getMissionSummary(rewardMissionIndex);
+
+  useEffect(() => {
+    if (missionStatus.claimedCount === claimedMissionCount) return;
+    setClaimedMissionCount(missionStatus.claimedCount);
+    try {
+      localStorage.setItem(MISSION_CLAIMED_KEY, String(missionStatus.claimedCount));
+    } catch {
+      // ignore
+    }
+  }, [claimedMissionCount, missionStatus.claimedCount]);
+
+  function handleOpenRewardModal() {
+    if (missionStatus.pendingRewards > 0) {
+      setMissionModal('claim');
+      return;
+    }
+    setMissionModal('locked');
+  }
+
+  function handleClaimMissionReward() {
+    if (missionStatus.pendingRewards <= 0) {
+      setMissionModal('locked');
+      return;
+    }
+    const nextClaimed = claimedMissionCount + 1;
+    const nextXp = xp + MISSION_XP_REWARD;
+    setClaimedMissionCount(nextClaimed);
+    setXp(nextXp);
+    try {
+      localStorage.setItem(MISSION_CLAIMED_KEY, String(nextClaimed));
+      localStorage.setItem(XP_KEY, String(nextXp));
+    } catch {
+      // ignore
+    }
+    setMissionModal(null);
+  }
+
   function handleConfirmDeadline() {
     if (!canConfirmDeadline) return;
     const nowMs = Date.now();
@@ -199,6 +274,9 @@ export default function Home() {
     } catch {
       // ignore
     }
+    const nextStartMs = nowMs - offsetMs;
+    setNowMs(nowMs);
+    setStreakStartMs(nextStartMs);
     setDaysCount(deadlineDays);
     setScreen('home');
   }
@@ -387,36 +465,53 @@ export default function Home() {
           </div>
 
           <div className="surface-card mt-5 p-5">
-            <p className="text-flow text-base font-medium text-white">
-              Перепрошивка привычки
-            </p>
-            <p className="text-flow mt-1 text-sm text-[#9A9AA0]">
-              {(() => {
-                const remainingDays = Math.max(90 - (daysCount ?? 0), 0);
-                return `${remainingDays} ${getDaysWord(remainingDays)} до полной свободы`;
-              })()}
-            </p>
-            {(() => {
-              const days = daysCount ?? 0;
-              const brainPercent = Math.min((days / 90) * 100, 100);
-              return (
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#2A2A2E]">
-                    <div
-                      className="h-full transition-all duration-500 ease-out"
-                      style={{
-                        width: `${brainPercent}%`,
-                        background:
-                          'linear-gradient(90deg, rgb(139 92 246), rgb(167 139 250), rgb(196 181 253))',
-                      }}
-                    />
-                  </div>
-                  <span className="min-w-[42px] text-right text-xs text-[#9A9AA0]">
-                    {Math.floor(brainPercent)}%
-                  </span>
-                </div>
-              );
-            })()}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-flow text-lg font-semibold text-white">Твоё задание</p>
+                <p className="text-flow mt-2 text-sm text-[#B0B8C8]">Продержаться:</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenRewardModal}
+                className="selection-card min-h-0 shrink-0 rounded-xl px-3 py-2 text-sm font-medium text-white transition duration-200 ease-out hover:bg-slate-800/70"
+              >
+                Награда
+              </button>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                {missionStatus.pendingRewards > 0 ? (
+                  <p className="text-flow text-base font-medium text-violet-200">Забери награду</p>
+                ) : (
+                  <p className="font-mono text-2xl tracking-[0.02em] text-white">{missionCountdown}</p>
+                )}
+                <p className="text-flow mt-1 text-xs text-[#9A9AA0]">
+                  {missionMeta.title} · {missionMeta.durationLabel}
+                </p>
+              </div>
+              {missionStatus.pendingRewards > 1 ? (
+                <span className="rounded-full border border-violet-300/35 bg-violet-500/15 px-2.5 py-1 text-xs text-violet-100">
+                  +{missionStatus.pendingRewards - 1} в очереди
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-4 flex items-center gap-3">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#2A2A2E]">
+                <div
+                  className="h-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${missionProgressPercent}%`,
+                    background:
+                      'linear-gradient(90deg, rgb(139 92 246), rgb(167 139 250), rgb(196 181 253))',
+                  }}
+                />
+              </div>
+              <span className="min-w-[42px] text-right text-xs text-[#9A9AA0]">
+                {missionProgressPercent}%
+              </span>
+            </div>
           </div>
 
           <div className="mt-4 flex items-center justify-between px-1">
@@ -492,6 +587,54 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {missionModal === 'claim' ? (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center bg-[#070a12]/72 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mission-reward-title"
+        >
+          <div className="surface-card w-full max-w-sm p-6">
+            <p id="mission-reward-title" className="text-flow text-center text-base font-medium text-white">
+              {rewardTitle}
+            </p>
+            <p className="text-flow mt-3 text-center text-sm text-[#D4D4D8]">{rewardSummary}</p>
+            <button
+              type="button"
+              onClick={handleClaimMissionReward}
+              className="primary-cta mt-6"
+            >
+              Забрать 54xp
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {missionModal === 'locked' ? (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center bg-[#070a12]/72 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mission-locked-title"
+        >
+          <div className="surface-card w-full max-w-sm p-6">
+            <p id="mission-locked-title" className="text-flow text-center text-base font-medium text-white">
+              Задание не выполнено
+            </p>
+            <p className="text-flow mt-3 text-center text-sm text-[#D4D4D8]">
+              Нам нравится твоё стремление. Оставайся таким же мотивированным и не забывай, зачем ты это делаешь. Возвращайся сюда, когда выполнишь задание и забирай награду.
+            </p>
+            <button
+              type="button"
+              onClick={() => setMissionModal(null)}
+              className="selection-card mt-6 w-full py-3 text-base font-semibold text-white"
+            >
+              Закрыть
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <InstallFlowModal
         open={showInstallFlow}
