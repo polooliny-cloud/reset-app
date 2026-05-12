@@ -9,6 +9,7 @@ import { useProfileProgress } from '@/lib/profile/useProfileProgress';
 
 const DURATION_SECONDS = 90;
 const MESSAGE_INTERVAL_SECONDS = 15;
+export const TIMER_TEXTS = {
   boredom: [
     'Сейчас тебе скучно. Мозг просит быстрый стимул.',
     'Обычно ты бы ушел в автопилот. Сейчас ты меняешь ход.',

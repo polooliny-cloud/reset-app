@@ -2,20 +2,23 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
 
+/** Browser client: URL + anon JWT only (no sb_publishable, no service_role). */
 const isBrowser = typeof window !== "undefined";
 
-function readEnv(name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_ANON_KEY"): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing environment variable: ${name}`);
-  }
-  return value;
-}
+/** Must be literal `process.env.NEXT_PUBLIC_*` so Next inlines values into the client bundle. */
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 function createSingletonClient(): SupabaseClient<Database> {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Add them to .env.local and restart `next dev`.",
+    );
+  }
+
   return createClient<Database>(
-    readEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    supabaseUrl,
+    supabaseAnonKey,
     {
       auth: {
         persistSession: isBrowser,

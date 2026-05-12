@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useAuth } from "@/lib/auth/useAuth";
+import { captureEvent } from "@/lib/posthogCapture";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -14,8 +15,9 @@ export default function SettingsPage() {
   async function handleSignOut() {
     setSigningOut(true);
     try {
+      captureEvent("auth_logout");
       await signOut();
-      router.replace("/");
+      router.replace("/onboarding");
     } finally {
       setSigningOut(false);
     }

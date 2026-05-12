@@ -5,6 +5,7 @@ export interface Database {
         Row: {
           id: string;
           email: string | null;
+          created_at: string | null;
           trial_started_at: string | null;
           onboarding_completed: boolean | null;
           xp: number | null;
@@ -14,6 +15,7 @@ export interface Database {
         Insert: {
           id: string;
           email?: string | null;
+          created_at?: string | null;
           trial_started_at?: string | null;
           onboarding_completed?: boolean | null;
           xp?: number | null;
@@ -23,6 +25,7 @@ export interface Database {
         Update: {
           id?: string;
           email?: string | null;
+          created_at?: string | null;
           trial_started_at?: string | null;
           onboarding_completed?: boolean | null;
           xp?: number | null;

@@ -7,6 +7,7 @@ import {
   ONBOARDING_COMPLETED_KEY,
   RESET_ONBOARDING_QUERY,
 } from '@/lib/onboarding';
+import { useAuth } from '@/lib/auth/useAuth';
 
 /** Сброс флага + чистый URL; reload сбрасывает клиентские модули (аналитика онбординга). */
 function applyResetOnboardingFromUrl(): boolean {
@@ -29,6 +30,7 @@ function applyResetOnboardingFromUrl(): boolean {
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { session } = useAuth();
   const [checked, setChecked] = useState(false);
   const [checkedPath, setCheckedPath] = useState<string | null>(null);
 
@@ -45,7 +47,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
     }
 
     if (pathname === '/onboarding') {
-      if (done) {
+      if (done && session?.user) {
         router.replace('/');
         return;
       }
@@ -61,7 +63,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
 
     setChecked(true);
     setCheckedPath(pathname);
-  }, [pathname, router]);
+  }, [pathname, router, session?.user]);
 
   if (!checked || checkedPath !== pathname) {
     return (

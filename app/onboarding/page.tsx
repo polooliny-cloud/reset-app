@@ -4,10 +4,19 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { ONBOARDING_COMPLETED_KEY } from '@/lib/onboarding';
+import { useAuth } from '@/lib/auth/useAuth';
 import { captureEvent } from '@/lib/posthogCapture';
+
+import {
+  OnboardingOtpPanel,
+  clearOnboardingResumeAfterMagicLink,
+  peekOnboardingResumeAfterMagicLink,
+} from './OnboardingOtpPanel';
 
 type Stage =
   | 'welcome'
+  | 'authRegister'
+  | 'authLogin'
   | 'question'
   | 'symptoms'
   | 'harm'
@@ -235,6 +244,7 @@ function Dots({ count, active }: { count: number; active: number }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { session } = useAuth();
   const [stage, setStage] = useState<Stage>('welcome');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [questionAnswers, setQuestionAnswers] = useState<(string | null)[]>(
@@ -246,6 +256,29 @@ export default function OnboardingPage() {
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [platform, setPlatform] = useState<Platform | null>(null);
   const onboardingCompleteSent = useRef(false);
+  const authResumeHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (!session?.user) {
+      authResumeHandledRef.current = false;
+    }
+  }, [session?.user]);
+
+  useEffect(() => {
+    if (!session?.user || peekOnboardingResumeAfterMagicLink() !== 'question') return;
+    if (authResumeHandledRef.current) return;
+    authResumeHandledRef.current = true;
+    clearOnboardingResumeAfterMagicLink();
+    captureEvent('auth_success');
+    setStage('question');
+    setQuestionIndex(0);
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (stage === 'welcome' && !session?.user) {
+      clearOnboardingResumeAfterMagicLink();
+    }
+  }, [stage, session?.user]);
 
   useEffect(() => {
     if (stage !== 'question') return;
@@ -314,6 +347,7 @@ export default function OnboardingPage() {
           alreadySent || localStorage.getItem(ONBOARDING_EVENT_DONE_KEY) === 'true';
         localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
         localStorage.setItem(ONBOARDING_EVENT_DONE_KEY, 'true');
+        clearOnboardingResumeAfterMagicLink();
       } catch {
         // ignore
       }
@@ -411,6 +445,10 @@ export default function OnboardingPage() {
   }
 
   function handleBack() {
+    if (stage === 'authRegister' || stage === 'authLogin') {
+      setStage('welcome');
+      return;
+    }
     if (stage === 'question') {
       if (questionIndex === 0) {
         setStage('welcome');
@@ -594,11 +632,48 @@ export default function OnboardingPage() {
               Давайте начнем с того, чтобы узнать, есть ли у вас проблемы с порно
             </p>
             <div className="mt-auto w-full pt-8">
-              <button type="button" onClick={() => setStage('question')} className="primary-cta">
+              <button
+                type="button"
+                onClick={() => {
+                  if (session?.user) {
+                    clearOnboardingResumeAfterMagicLink();
+                    setStage('question');
+                    setQuestionIndex(0);
+                    return;
+                  }
+                  captureEvent('auth_screen_viewed', { mode: 'register' });
+                  setStage('authRegister');
+                }}
+                className="primary-cta"
+              >
                 Начать тест
               </button>
             </div>
           </div>
+        ) : null}
+
+        {stage === 'authRegister' ? (
+          <OnboardingOtpPanel
+            mode="register"
+            onSwitchToLogin={() => {
+              captureEvent('auth_screen_viewed', { mode: 'login' });
+              setStage('authLogin');
+            }}
+            onSwitchToRegister={() => setStage('authRegister')}
+            onBack={() => setStage('welcome')}
+          />
+        ) : null}
+
+        {stage === 'authLogin' ? (
+          <OnboardingOtpPanel
+            mode="login"
+            onSwitchToLogin={() => setStage('authLogin')}
+            onSwitchToRegister={() => {
+              captureEvent('auth_screen_viewed', { mode: 'register' });
+              setStage('authRegister');
+            }}
+            onBack={() => setStage('welcome')}
+          />
         ) : null}
 
         {stage === 'question' ? renderQuestionScreen() : null}

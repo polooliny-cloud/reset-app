@@ -1,8 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-
-import { AuthScreen } from "./AuthScreen";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { useAuth } from "@/lib/auth/useAuth";
 
@@ -19,13 +18,28 @@ function SessionLoading() {
 
 export function SessionGate({ children }: { children: ReactNode }) {
   const { session, initializing } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+  const redirectingRef = useRef(false);
+
+  useEffect(() => {
+    if (initializing) return;
+    if (session?.user) {
+      redirectingRef.current = false;
+      return;
+    }
+    if (pathname === "/onboarding") return;
+    if (redirectingRef.current) return;
+    redirectingRef.current = true;
+    router.replace("/onboarding");
+  }, [initializing, session, pathname, router]);
 
   if (initializing) {
     return <SessionLoading />;
   }
 
-  if (!session?.user) {
-    return <AuthScreen />;
+  if (!session?.user && pathname !== "/onboarding") {
+    return <SessionLoading />;
   }
 
   return <>{children}</>;
