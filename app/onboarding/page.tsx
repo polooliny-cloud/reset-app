@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { ONBOARDING_COMPLETED_KEY } from '@/lib/onboarding';
 import { useAuth } from '@/lib/auth/useAuth';
@@ -244,7 +244,7 @@ function Dots({ count, active }: { count: number; active: number }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { session } = useAuth();
+  const { session, initializing } = useAuth();
   const [stage, setStage] = useState<Stage>('welcome');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [questionAnswers, setQuestionAnswers] = useState<(string | null)[]>(
@@ -264,15 +264,45 @@ export default function OnboardingPage() {
     }
   }, [session?.user]);
 
+  /** Уже прошли онбординг раньше, но без аккаунта — сразу экран регистрации (как в онбординге). */
+  useLayoutEffect(() => {
+    if (initializing) return;
+    if (session?.user) return;
+    if (typeof window === 'undefined') return;
+    try {
+      const done = localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
+      if (done) {
+        setStage((prev) => (prev === 'welcome' ? 'authRegister' : prev));
+      }
+    } catch {
+      // ignore
+    }
+  }, [initializing, session?.user]);
+
   useEffect(() => {
     if (!session?.user || peekOnboardingResumeAfterMagicLink() !== 'question') return;
     if (authResumeHandledRef.current) return;
     authResumeHandledRef.current = true;
+
+    let completedOnboardingBeforeAuth = false;
+    try {
+      completedOnboardingBeforeAuth =
+        localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
+    } catch {
+      // ignore
+    }
+
     clearOnboardingResumeAfterMagicLink();
     captureEvent('auth_success');
+
+    if (completedOnboardingBeforeAuth) {
+      router.replace('/');
+      return;
+    }
+
     setStage('question');
     setQuestionIndex(0);
-  }, [session?.user?.id]);
+  }, [session?.user?.id, router]);
 
   useEffect(() => {
     if (stage === 'welcome' && !session?.user) {
