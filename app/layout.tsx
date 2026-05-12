@@ -6,6 +6,7 @@ import { OnboardingDevReset } from "./components/OnboardingDevReset";
 import { OnboardingGate } from "./components/OnboardingGate";
 import { PostHogProvider } from "./components/PostHogProvider";
 import { ProfileBootstrap } from "./components/ProfileBootstrap";
+import { SessionGate } from "./components/SessionGate";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -48,8 +49,10 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col bg-[#090d14] text-white [color-scheme:dark]">
         <PostHogProvider>
           <AnalyticsAppMount />
-          <ProfileBootstrap />
-          <OnboardingGate>{children}</OnboardingGate>
+          <SessionGate>
+            <ProfileBootstrap />
+            <OnboardingGate>{children}</OnboardingGate>
+          </SessionGate>
           <OnboardingDevReset />
         </PostHogProvider>
       </body>
