@@ -17,12 +17,12 @@ import {
   resolveMissionStatus,
 } from '@/lib/missions';
 import { captureEvent } from '@/lib/posthogCapture';
+import { PROFILE_LS_WINS_KEY, PROFILE_LS_XP_KEY } from '@/lib/profile/statsKeys';
+import { useProfileProgress } from '@/lib/profile/useProfileProgress';
 import { getDaysWord } from '@/lib/utils';
 
 const STORAGE_KEY = 'myapp_start_date';
 
-const WINS_KEY = 'wins';
-const XP_KEY = 'xp';
 const MISSION_CLAIMED_KEY = 'mission_claimed_count';
 
 type HomeScreen = 'home' | 'wins' | 'deadline';
@@ -93,9 +93,9 @@ function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void })
 
 export default function Home() {
   const pathname = usePathname();
+  const { xp, victories, applyProgress, resetProgress } = useProfileProgress();
+  const wins = victories;
   const [screen, setScreen] = useState<HomeScreen>('home');
-  const [wins, setWins] = useState(0);
-  const [xp, setXp] = useState(0);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [streakStartMs, setStreakStartMs] = useState<number | null>(null);
   const [claimedMissionCount, setClaimedMissionCount] = useState(0);
@@ -133,30 +133,20 @@ export default function Home() {
   }, [syncLabelFromStorage]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || pathname !== '/') return;
-    const w = localStorage.getItem(WINS_KEY);
-    const x = localStorage.getItem(XP_KEY);
-    const claimed = localStorage.getItem(MISSION_CLAIMED_KEY);
-    if (w !== null) {
-      const n = Number(w);
-      if (Number.isFinite(n)) setWins(n);
-    }
-    if (x !== null) {
-      const n = Number(x);
-      if (Number.isFinite(n)) setXp(n);
-    }
-    if (claimed !== null) {
-      const n = Number(claimed);
-      if (Number.isFinite(n) && n >= 0) setClaimedMissionCount(Math.floor(n));
-    }
-  }, [pathname]);
-
-  useEffect(() => {
     if (pathname !== '/') return;
     const tick = () => setNowMs(Date.now());
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || pathname !== '/') return;
+    const claimed = localStorage.getItem(MISSION_CLAIMED_KEY);
+    if (claimed !== null) {
+      const n = Number(claimed);
+      if (Number.isFinite(n) && n >= 0) setClaimedMissionCount(Math.floor(n));
+    }
   }, [pathname]);
 
   useEffect(() => {
@@ -171,13 +161,12 @@ export default function Home() {
     trackEvent('reset_click');
     incrementMetric('reset_click');
     captureEvent('reset_click');
+    resetProgress();
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('days');
-    localStorage.removeItem(WINS_KEY);
-    localStorage.removeItem(XP_KEY);
+    localStorage.removeItem(PROFILE_LS_WINS_KEY);
+    localStorage.removeItem(PROFILE_LS_XP_KEY);
     localStorage.removeItem(MISSION_CLAIMED_KEY);
-    setWins(0);
-    setXp(0);
     setClaimedMissionCount(0);
     setMissionModal(null);
     setShowResetModal(false);
@@ -252,10 +241,9 @@ export default function Home() {
     const nextClaimed = claimedMissionCount + 1;
     const nextXp = xp + MISSION_XP_REWARD;
     setClaimedMissionCount(nextClaimed);
-    setXp(nextXp);
+    applyProgress(nextXp, victories);
     try {
       localStorage.setItem(MISSION_CLAIMED_KEY, String(nextClaimed));
-      localStorage.setItem(XP_KEY, String(nextXp));
     } catch {
       // ignore
     }
@@ -514,7 +502,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-between px-1">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-1 sm:justify-between">
             <button
               type="button"
               onClick={handleManualInstallOpen}
@@ -522,6 +510,9 @@ export default function Home() {
             >
               Скачать
             </button>
+            <Link href="/settings" className="secondary-link !w-auto">
+              Настройки
+            </Link>
             <button
               type="button"
               onClick={() => setShowResetModal(true)}

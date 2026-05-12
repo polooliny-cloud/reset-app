@@ -7,18 +7,27 @@ export interface Database {
           email: string | null;
           trial_started_at: string | null;
           onboarding_completed: boolean | null;
+          xp: number | null;
+          level: number | null;
+          victories: number | null;
         };
         Insert: {
           id: string;
           email?: string | null;
           trial_started_at?: string | null;
           onboarding_completed?: boolean | null;
+          xp?: number | null;
+          level?: number | null;
+          victories?: number | null;
         };
         Update: {
           id?: string;
           email?: string | null;
           trial_started_at?: string | null;
           onboarding_completed?: boolean | null;
+          xp?: number | null;
+          level?: number | null;
+          victories?: number | null;
         };
         Relationships: [];
       };

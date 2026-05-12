@@ -5,12 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { captureFirstVictoryIfNeeded } from '@/lib/posthogCapture';
+import { useProfileProgress } from '@/lib/profile/useProfileProgress';
 
 const DURATION_SECONDS = 90;
 const MESSAGE_INTERVAL_SECONDS = 15;
-const WINS_KEY = 'wins';
-const XP_KEY = 'xp';
-export const TIMER_TEXTS = {
   boredom: [
     'Сейчас тебе скучно. Мозг просит быстрый стимул.',
     'Обычно ты бы ушел в автопилот. Сейчас ты меняешь ход.',
@@ -158,15 +156,14 @@ function getTimerMessageIndex(timeLeft: number): number {
 
 export default function SosPage() {
   const router = useRouter();
+  const { xp, victories, applyProgress } = useProfileProgress();
+  const wins = victories;
   const [screen, setScreen] = useState<'trigger' | 'timer'>('trigger');
   const [timeLeft, setTimeLeft] = useState(DURATION_SECONDS);
-  const [wins, setWins] = useState(0);
-  const [xp, setXp] = useState(0);
   const [showReward, setShowReward] = useState(false);
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
   const hasTrackedSosCompletedRef = useRef(false);
   const rewardGivenRef = useRef(false);
-  const [statsHydrated, setStatsHydrated] = useState(false);
   const [activeTrigger, setActiveTrigger] = useState<(typeof TRIGGERS)[number] | null>(
     null,
   );
@@ -176,31 +173,6 @@ export default function SosPage() {
     : ('boredom' as const);
   const timerMessage = TIMER_TEXTS[activeTriggerKey][timerMessageIndex];
   const isLastTimerMessage = timerMessageIndex === TIMER_TEXTS[activeTriggerKey].length - 1;
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const savedWins = localStorage.getItem(WINS_KEY);
-    const savedXp = localStorage.getItem(XP_KEY);
-    if (savedWins !== null) {
-      const n = Number(savedWins);
-      if (Number.isFinite(n)) setWins(n);
-    }
-    if (savedXp !== null) {
-      const n = Number(savedXp);
-      if (Number.isFinite(n)) setXp(n);
-    }
-    setStatsHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !statsHydrated) return;
-    localStorage.setItem(WINS_KEY, wins.toString());
-  }, [wins, statsHydrated]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !statsHydrated) return;
-    localStorage.setItem(XP_KEY, xp.toString());
-  }, [xp, statsHydrated]);
 
   useEffect(() => {
     if (screen !== 'timer') return;
@@ -372,14 +344,7 @@ export default function SosPage() {
             <button
               type="button"
               onClick={() => {
-                const nextWins = wins + 1;
-                const nextXp = xp + 16;
-                setWins(nextWins);
-                setXp(nextXp);
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem(WINS_KEY, String(nextWins));
-                  localStorage.setItem(XP_KEY, String(nextXp));
-                }
+                applyProgress(xp + 16, victories + 1);
                 setShowReward(false);
                 rewardGivenRef.current = false;
                 router.replace('/');

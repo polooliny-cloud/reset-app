@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { AnalyticsAppMount } from "./components/AnalyticsAppMount";
+import { AuthProvider } from "./components/AuthProvider";
 import { OnboardingDevReset } from "./components/OnboardingDevReset";
 import { OnboardingGate } from "./components/OnboardingGate";
 import { PostHogProvider } from "./components/PostHogProvider";
 import { ProfileBootstrap } from "./components/ProfileBootstrap";
+import { ProfileProgressProvider } from "./components/ProfileProgressProvider";
 import { SessionGate } from "./components/SessionGate";
 import "./globals.css";
 
@@ -48,12 +50,16 @@ export default function RootLayout({
       </head>
       <body className="flex min-h-full flex-col bg-[#090d14] text-white [color-scheme:dark]">
         <PostHogProvider>
-          <AnalyticsAppMount />
-          <SessionGate>
-            <ProfileBootstrap />
-            <OnboardingGate>{children}</OnboardingGate>
-          </SessionGate>
-          <OnboardingDevReset />
+          <AuthProvider>
+            <AnalyticsAppMount />
+            <SessionGate>
+              <ProfileBootstrap />
+              <ProfileProgressProvider>
+                <OnboardingGate>{children}</OnboardingGate>
+              </ProfileProgressProvider>
+            </SessionGate>
+            <OnboardingDevReset />
+          </AuthProvider>
         </PostHogProvider>
       </body>
     </html>

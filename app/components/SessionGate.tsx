@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
-import type { Session } from "@supabase/supabase-js";
+import { AuthScreen } from "./AuthScreen";
 
-import { AuthEmailScreen } from "./AuthEmailScreen";
-
-import { supabase } from "@/lib/supabase";
-
-type GatePhase = "loading" | "ready";
+import { useAuth } from "@/lib/auth/useAuth";
 
 function SessionLoading() {
   return (
@@ -22,28 +18,14 @@ function SessionLoading() {
 }
 
 export function SessionGate({ children }: { children: ReactNode }) {
-  const [phase, setPhase] = useState<GatePhase>("loading");
-  const [session, setSession] = useState<Session | null>(null);
+  const { session, initializing } = useAuth();
 
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setPhase("ready");
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  if (phase === "loading") {
+  if (initializing) {
     return <SessionLoading />;
   }
 
   if (!session?.user) {
-    return <AuthEmailScreen />;
+    return <AuthScreen />;
   }
 
   return <>{children}</>;

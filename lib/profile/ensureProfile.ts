@@ -56,6 +56,9 @@ export async function ensureProfileForUser(
       email: user.email ?? null,
       trial_started_at: new Date().toISOString(),
       onboarding_completed: readOnboardingCompleted(),
+      xp: 0,
+      level: 1,
+      victories: 0,
     };
 
     const { error: insertError } = await client.from("profiles").insert(payload);
