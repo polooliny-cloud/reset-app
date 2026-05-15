@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useAuth } from "@/lib/auth/useAuth";
+import { clearOtpCooldownStorage } from "@/lib/auth/otpCooldownStorage";
+import { clearOnboardingResumeAfterMagicLink } from "@/app/onboarding/OnboardingOtpPanel";
 import { captureEvent } from "@/lib/posthogCapture";
 
 export default function SettingsPage() {
@@ -16,6 +18,8 @@ export default function SettingsPage() {
     setSigningOut(true);
     try {
       captureEvent("auth_logout");
+      clearOtpCooldownStorage();
+      clearOnboardingResumeAfterMagicLink();
       await signOut();
       router.replace("/onboarding");
     } finally {
