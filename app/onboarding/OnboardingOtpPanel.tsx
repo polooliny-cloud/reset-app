@@ -185,6 +185,7 @@ export function OnboardingOtpPanel({
     setStep("form");
     setError(null);
     setInfo(null);
+    clearOnboardingResumeAfterMagicLink();
     clearOtpCooldownStorage();
     setCooldownSec(0);
   }
@@ -199,13 +200,17 @@ export function OnboardingOtpPanel({
     onSwitchToRegister();
   }
 
-  const topPadding = hideBack
-    ? "pt-[calc(20px+env(safe-area-inset-top))]"
-    : "pt-[calc(72px+env(safe-area-inset-top))]";
+  const topPadding =
+    step === "success"
+      ? "pt-[calc(72px+env(safe-area-inset-top))]"
+      : hideBack
+        ? "pt-[calc(20px+env(safe-area-inset-top))]"
+        : "pt-[calc(72px+env(safe-area-inset-top))]";
 
   return (
     <>
-      {hideBack || step === "success" ? null : <OnboardingOtpBackButton onClick={onBack} />}
+      {step === "form" && !hideBack ? <OnboardingOtpBackButton onClick={onBack} /> : null}
+      {step === "success" ? <OnboardingOtpBackButton onClick={() => resetToForm()} /> : null}
       <div
         className={`mx-auto flex w-full max-w-md flex-1 flex-col px-2 pb-[calc(16px+env(safe-area-inset-bottom))] ${topPadding}`}
       >
