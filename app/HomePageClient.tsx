@@ -404,72 +404,74 @@ export default function Home() {
       <main className="app-shell flex min-h-screen flex-col px-4 pb-6 pt-5 sm:px-6">
         <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-12">
         <div
-          className="absolute z-40 flex flex-row-reverse items-center gap-2"
-          style={{ top: topInset, right: rightInset }}
+          className="absolute left-0 right-0 z-40 flex items-center justify-between"
+          style={{
+            top: topInset,
+            paddingLeft: leftInset,
+            paddingRight: rightInset,
+          }}
         >
-          <button
-            type="button"
-            onClick={() => setScreen('wins')}
-            className="inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-slate-300/20 bg-slate-900/78 px-3 py-1.5 text-violet-300 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
-            aria-label={`Побед: ${wins}`}
-          >
-            <span aria-hidden>🔥</span>
-            <span className="text-base font-semibold tabular-nums text-white">{wins}</span>
-          </button>
+          <p className="text-left text-[1.1375rem] font-normal uppercase leading-none tracking-[0.18em] text-white/75">
+            Reset
+          </p>
+          <div className="flex flex-row-reverse items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setScreen('wins')}
+              className="inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-slate-300/20 bg-slate-900/78 px-3 py-1.5 text-violet-300 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
+              aria-label={`Побед: ${wins}`}
+            >
+              <span aria-hidden>🔥</span>
+              <span className="text-base font-semibold tabular-nums text-white">{wins}</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setScreen('deadline')}
-            aria-label="Срок воздержания"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/78 text-slate-100/90 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
-          >
-            <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
-              <circle
-                cx="12"
-                cy="12"
-                r="8.25"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                opacity="0.9"
-              />
-              <path
-                d="M12 8.5V12L14.8 13.8"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+            <button
+              type="button"
+              onClick={() => setScreen('deadline')}
+              aria-label="Срок воздержания"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/78 text-slate-100/90 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
+            >
+              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="8.25"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  opacity="0.9"
+                />
+                <path
+                  d="M12 8.5V12L14.8 13.8"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
 
-          <Link
-            href="/settings"
-            aria-label="Настройки"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/78 text-slate-100/90 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
-          >
-            <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
-              <circle
-                cx="12"
-                cy="9"
-                r="3.25"
-                stroke="currentColor"
-                strokeWidth="1.75"
-              />
-              <path
-                d="M5.25 19.25c0-3.45 2.9-6.25 6.75-6.25s6.75 2.8 6.75 6.25"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-              />
-            </svg>
-          </Link>
-        </div>
-
-        <div
-          className="absolute text-left text-sm uppercase tracking-[0.18em] text-white/75"
-          style={{ top: topInset, left: leftInset }}
-        >
-          Reset
+            <Link
+              href="/settings"
+              aria-label="Настройки"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/78 text-slate-100/90 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
+            >
+              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+                <circle
+                  cx="12"
+                  cy="9"
+                  r="3.25"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                />
+                <path
+                  d="M5.25 19.25c0-3.45 2.9-6.25 6.75-6.25s6.75 2.8 6.75 6.25"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </Link>
+          </div>
         </div>
 
         <div className="mx-auto mt-10 flex w-full max-w-md flex-1 flex-col pt-8">
