@@ -29,10 +29,10 @@ export function OnboardingOtpSuccess({
       <h1 className="text-title text-measure mt-6 text-center text-[1.65rem] font-semibold leading-tight text-white sm:text-[1.85rem]">
         Проверь почту
       </h1>
-      <p className="text-body text-measure mt-3 text-center text-[15px] leading-relaxed text-[#9A9AA0]">
-        Мы отправили ссылку для входа на{" "}
-        <span className="break-all font-medium text-[#C4C4C9]">{email}</span>
-      </p>
+      <div className="text-body text-measure mt-3 text-center text-[15px] leading-relaxed text-[#9A9AA0]">
+        <p>Мы отправили ссылку для входа на:</p>
+        <p className="mt-2 break-all font-medium text-[#C4C4C9]">{email}</p>
+      </div>
 
       {infoMessage ? (
         <p

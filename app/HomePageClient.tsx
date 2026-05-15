@@ -441,7 +441,7 @@ export default function Home() {
         </button>
 
         <div
-          className="absolute text-left text-2xl font-semibold text-white"
+          className="absolute text-left text-sm uppercase tracking-[0.18em] text-white/75"
           style={{ top: topInset, left: leftInset }}
         >
           Reset

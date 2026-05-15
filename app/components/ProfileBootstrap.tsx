@@ -14,32 +14,50 @@ export function ProfileBootstrap() {
   const runEnsure = useCallback(async () => {
     const {
       data: { session },
+      error: sessionError,
     } = await supabase.auth.getSession();
 
+    if (sessionError) {
+      console.error("[ProfileBootstrap] getSession failed", sessionError.message, sessionError);
+      setErrorMessage(sessionError.message);
+      setSyncState("error");
+      return;
+    }
+
     if (!session?.user) {
+      console.log("[ProfileBootstrap] no session, skip profile ensure");
       setSyncState("ready");
       setErrorMessage(null);
       return;
     }
 
+    console.log("[ProfileBootstrap] ensure profile after getSession", session.user.id);
     setSyncState("loading");
     setErrorMessage(null);
 
     const result = await ensureProfileForUser(supabase, session.user);
 
     if (!result.ok) {
+      console.error("[ProfileBootstrap] ensureProfile failed", result.error);
       setErrorMessage(result.error);
       setSyncState("error");
       return;
     }
 
+    console.log("[ProfileBootstrap] ensureProfile ok", { created: result.created });
     setSyncState("ready");
   }, []);
 
   useEffect(() => {
+    void runEnsure();
+  }, [runEnsure]);
+
+  useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("[ProfileBootstrap] onAuthStateChange", event, session?.user?.id ?? "no-user");
+
       if (!session?.user) {
         setSyncState("ready");
         setErrorMessage(null);
@@ -52,11 +70,13 @@ export function ProfileBootstrap() {
       const result = await ensureProfileForUser(supabase, session.user);
 
       if (!result.ok) {
+        console.error("[ProfileBootstrap] ensureProfile failed (auth change)", result.error);
         setErrorMessage(result.error);
         setSyncState("error");
         return;
       }
 
+      console.log("[ProfileBootstrap] ensureProfile ok (auth change)", { created: result.created });
       setSyncState("ready");
     });
 

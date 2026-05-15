@@ -9,7 +9,7 @@ export const OTP_MESSAGES = {
   network: "Проблема с интернет-соединением",
   generic: "Не удалось отправить письмо",
   emptyEmail: "Введите email.",
-  successHint: "Мы отправили ссылку для входа на вашу почту",
+  successHint: "Не забудьте проверить спам.",
 } as const;
 
 export type OtpErrorKind =
