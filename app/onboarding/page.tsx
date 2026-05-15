@@ -3,7 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { ONBOARDING_COMPLETED_KEY } from '@/lib/onboarding';
+import {
+  ONBOARDING_COMPLETED_KEY,
+  isOnboardingCompletedLocally,
+} from '@/lib/onboarding';
 import { useAuth } from '@/lib/auth/useAuth';
 import { captureEvent } from '@/lib/posthogCapture';
 
@@ -257,6 +260,7 @@ export default function OnboardingPage() {
   const [platform, setPlatform] = useState<Platform | null>(null);
   const onboardingCompleteSent = useRef(false);
   const authResumeHandledRef = useRef(false);
+  const [authStandalone, setAuthStandalone] = useState(() => isOnboardingCompletedLocally());
 
   useEffect(() => {
     if (!session?.user) {
@@ -272,6 +276,7 @@ export default function OnboardingPage() {
     try {
       const done = localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
       if (done) {
+        setAuthStandalone(true);
         setStage((prev) => (prev === 'welcome' ? 'authRegister' : prev));
       }
     } catch {
@@ -280,29 +285,29 @@ export default function OnboardingPage() {
   }, [initializing, session?.user]);
 
   useEffect(() => {
-    if (!session?.user || peekOnboardingResumeAfterMagicLink() !== 'question') return;
+    if (!session?.user) return;
     if (authResumeHandledRef.current) return;
-    authResumeHandledRef.current = true;
 
-    let completedOnboardingBeforeAuth = false;
-    try {
-      completedOnboardingBeforeAuth =
-        localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
-    } catch {
-      // ignore
-    }
+    const resume = peekOnboardingResumeAfterMagicLink();
+    const completedBeforeAuth = isOnboardingCompletedLocally();
+    const onAuthStage = stage === 'authRegister' || stage === 'authLogin';
 
-    clearOnboardingResumeAfterMagicLink();
-    captureEvent('auth_success');
-
-    if (completedOnboardingBeforeAuth) {
+    if (resume === 'home' || (completedBeforeAuth && onAuthStage)) {
+      authResumeHandledRef.current = true;
+      clearOnboardingResumeAfterMagicLink();
+      captureEvent('auth_success');
       router.replace('/');
       return;
     }
 
+    if (resume !== 'question') return;
+
+    authResumeHandledRef.current = true;
+    clearOnboardingResumeAfterMagicLink();
+    captureEvent('auth_success');
     setStage('question');
     setQuestionIndex(0);
-  }, [session?.user?.id, router]);
+  }, [session?.user?.id, router, stage]);
 
   useEffect(() => {
     if (stage === 'welcome' && !session?.user) {
@@ -476,7 +481,9 @@ export default function OnboardingPage() {
 
   function handleBack() {
     if (stage === 'authRegister' || stage === 'authLogin') {
-      setStage('welcome');
+      if (!authStandalone) {
+        setStage('welcome');
+      }
       return;
     }
     if (stage === 'question') {
@@ -685,24 +692,30 @@ export default function OnboardingPage() {
         {stage === 'authRegister' ? (
           <OnboardingOtpPanel
             mode="register"
+            hideBack={authStandalone}
             onSwitchToLogin={() => {
               captureEvent('auth_screen_viewed', { mode: 'login' });
               setStage('authLogin');
             }}
             onSwitchToRegister={() => setStage('authRegister')}
-            onBack={() => setStage('welcome')}
+            onBack={() => {
+              if (!authStandalone) setStage('welcome');
+            }}
           />
         ) : null}
 
         {stage === 'authLogin' ? (
           <OnboardingOtpPanel
             mode="login"
+            hideBack={authStandalone}
             onSwitchToLogin={() => setStage('authLogin')}
             onSwitchToRegister={() => {
               captureEvent('auth_screen_viewed', { mode: 'register' });
               setStage('authRegister');
             }}
-            onBack={() => setStage('welcome')}
+            onBack={() => {
+              if (!authStandalone) setStage('welcome');
+            }}
           />
         ) : null}
 

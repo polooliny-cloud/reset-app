@@ -8,8 +8,12 @@ import { OnboardingGate } from "./components/OnboardingGate";
 import { PostHogProvider } from "./components/PostHogProvider";
 import { ProfileBootstrap } from "./components/ProfileBootstrap";
 import { ProfileProgressProvider } from "./components/ProfileProgressProvider";
+import { DeployVersionGuard } from "./components/DeployVersionGuard";
 import { SessionGate } from "./components/SessionGate";
 import "./globals.css";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,6 +55,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col bg-[#090d14] text-white [color-scheme:dark]">
         <PostHogProvider>
           <AuthProvider>
+            <DeployVersionGuard />
             <AnalyticsAppMount />
             <SessionGate>
               <ProfileBootstrap />

@@ -12,7 +12,7 @@ import {
 
 import type { Session, User } from "@supabase/supabase-js";
 
-import { mapAuthError } from "@/lib/auth/mapAuthError";
+import { AUTH_MESSAGES, mapAuthError } from "@/lib/auth/mapAuthError";
 import { supabase } from "@/lib/supabase";
 
 export type AuthOtpIntent = "register" | "login";
@@ -22,7 +22,10 @@ export type AuthContextValue = {
   user: User | null;
   /** True until the first auth state is received from Supabase (incl. restored session). */
   initializing: boolean;
-  signInWithOtp: (email: string, intent: AuthOtpIntent) => Promise<{ error: string | null }>;
+  signInWithOtp: (
+    email: string,
+    intent: AuthOtpIntent,
+  ) => Promise<{ error: string | null; cooldownSeconds?: number }>;
   signOut: () => Promise<void>;
 };
 
@@ -41,6 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (cancelled) return;
+      setSession(initialSession);
+      setInitializing(false);
+    });
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
@@ -49,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
     };
   }, []);
@@ -56,25 +68,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithOtpCb = useCallback(async (email: string, intent: AuthOtpIntent) => {
     const trimmed = email.trim();
     if (!trimmed) {
-      return { error: "Введи email." };
+      return { error: AUTH_MESSAGES.emptyEmail };
     }
 
     const redirectTo =
       typeof window !== "undefined" ? `${window.location.origin}/onboarding` : undefined;
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: trimmed,
-      options: {
-        emailRedirectTo: redirectTo,
-        shouldCreateUser: intent === "register",
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: {
+          emailRedirectTo: redirectTo,
+          shouldCreateUser: intent === "register",
+        },
+      });
 
-    if (error) {
-      return { error: mapAuthError(error) };
+      if (error) {
+        const mapped = mapAuthError(error);
+        return {
+          error: mapped.message,
+          cooldownSeconds: mapped.cooldownSeconds,
+        };
+      }
+
+      return { error: null };
+    } catch {
+      return { error: AUTH_MESSAGES.network };
     }
-
-    return { error: null };
   }, []);
 
   const signOutCb = useCallback(async () => {
