@@ -33,7 +33,7 @@ const ABSTINENCE_DEADLINE_HOURS_KEY = 'abstinence_deadline_hours';
 const ABSTINENCE_DEADLINE_MINUTES_KEY = 'abstinence_deadline_minutes';
 
 const homeIconActionClass =
-  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/78 text-slate-100/90 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95';
+  'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/78 text-slate-100/90 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95';
 
 function pad(n: number) {
   return n.toString().padStart(2, '0');
@@ -445,7 +445,7 @@ export default function Home() {
         </main>
       ) : (
       <main className="app-shell flex min-h-screen flex-col px-4 pb-6 pt-5 sm:px-6">
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-10">
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-8">
         <div
           className="absolute left-0 right-0 z-40"
           style={{
@@ -459,12 +459,12 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mx-auto mt-6 flex w-full max-w-md flex-1 flex-col pt-6">
-          <div className="surface-card flex min-h-[10rem] flex-col items-center justify-center px-6 py-8">
+        <div className="mx-auto mt-2 flex w-full max-w-md flex-1 flex-col pt-3">
+          <div className="surface-card flex min-h-[9.5rem] flex-col items-center justify-center px-6 py-7">
             <StreakClock onDaysChange={setDaysCount} />
           </div>
 
-          <div className="surface-card mt-5 p-5">
+          <div className="surface-card mt-4 p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-flow text-lg font-semibold text-white">Ваше задание</p>
@@ -514,8 +514,10 @@ export default function Home() {
             </div>
           </div>
 
+          <div className="min-h-6 flex-1" aria-hidden />
+
           <nav
-            className="mt-5 flex items-center justify-between gap-1 px-0.5"
+            className="mx-auto flex w-fit shrink-0 items-center justify-center gap-6"
             aria-label="Быстрые действия"
           >
             <Link
@@ -523,7 +525,7 @@ export default function Home() {
               aria-label="Профиль"
               className={homeIconActionClass}
             >
-              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+              <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none">
                 <circle cx="12" cy="9" r="3.25" stroke="currentColor" strokeWidth="1.75" />
                 <path
                   d="M5.25 19.25c0-3.45 2.9-6.25 6.75-6.25s6.75 2.8 6.75 6.25"
@@ -540,7 +542,7 @@ export default function Home() {
               aria-label="Скачать приложение"
               className={homeIconActionClass}
             >
-              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+              <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none">
                 <path
                   d="M12 4v9m0 0l3.5-3.5M12 13l-3.5-3.5M6 18h12"
                   stroke="currentColor"
@@ -555,7 +557,7 @@ export default function Home() {
               type="button"
               onClick={() => setScreen('wins')}
               aria-label={`Побед: ${wins}`}
-              className={`${homeIconActionClass} text-base`}
+              className={`${homeIconActionClass} text-lg`}
             >
               <span aria-hidden>🔥</span>
             </button>
@@ -566,7 +568,7 @@ export default function Home() {
               aria-label="Срок воздержания"
               className={homeIconActionClass}
             >
-              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+              <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none">
                 <circle
                   cx="12"
                   cy="12"
@@ -591,7 +593,7 @@ export default function Home() {
               aria-label="Сбросить прогресс"
               className={homeIconActionClass}
             >
-              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+              <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none">
                 <path
                   d="M4 12a8 8 0 0113.66-5.66M20 12a8 8 0 01-13.66 5.66"
                   stroke="currentColor"
@@ -610,7 +612,9 @@ export default function Home() {
             </button>
           </nav>
 
-          <div className="mt-auto w-full pb-[calc(32px+env(safe-area-inset-bottom))] pt-6">
+          <div className="min-h-6 flex-1" aria-hidden />
+
+          <div className="w-full shrink-0 pb-[calc(20px+env(safe-area-inset-bottom))]">
             <Link
               href="/sos"
               onClick={() => {
