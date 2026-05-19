@@ -93,7 +93,7 @@ function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void })
 
 export default function Home() {
   const pathname = usePathname();
-  const { xp, victories, applyProgress, resetProgress } = useProfileProgress();
+  const { xp, victories, awardVictory, resetProgress } = useProfileProgress();
   const wins = victories;
   const [screen, setScreen] = useState<HomeScreen>('home');
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -239,9 +239,8 @@ export default function Home() {
       return;
     }
     const nextClaimed = claimedMissionCount + 1;
-    const nextXp = xp + MISSION_XP_REWARD;
     setClaimedMissionCount(nextClaimed);
-    applyProgress(nextXp, victories);
+    void awardVictory('daily_checkin', MISSION_XP_REWARD);
     try {
       localStorage.setItem(MISSION_CLAIMED_KEY, String(nextClaimed));
     } catch {

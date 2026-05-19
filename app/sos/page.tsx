@@ -157,7 +157,7 @@ function getTimerMessageIndex(timeLeft: number): number {
 
 export default function SosPage() {
   const router = useRouter();
-  const { xp, victories, applyProgress } = useProfileProgress();
+  const { victories, awardVictory } = useProfileProgress();
   const wins = victories;
   const [screen, setScreen] = useState<'trigger' | 'timer'>('trigger');
   const [timeLeft, setTimeLeft] = useState(DURATION_SECONDS);
@@ -345,7 +345,7 @@ export default function SosPage() {
             <button
               type="button"
               onClick={() => {
-                applyProgress(xp + 16, victories + 1);
+                void awardVictory('relapse_resisted', 16);
                 setShowReward(false);
                 rewardGivenRef.current = false;
                 router.replace('/');

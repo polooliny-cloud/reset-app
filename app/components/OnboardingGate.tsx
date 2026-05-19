@@ -3,29 +3,9 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import {
-  ONBOARDING_COMPLETED_KEY,
-  RESET_ONBOARDING_QUERY,
-} from '@/lib/onboarding';
+import { useProfileState } from '@/app/components/ProfileProvider';
+import { RESET_ONBOARDING_QUERY } from '@/lib/onboarding';
 import { useAuth } from '@/lib/auth/useAuth';
-
-/** Сброс флага + чистый URL; reload сбрасывает клиентские модули (аналитика онбординга). */
-function applyResetOnboardingFromUrl(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get(RESET_ONBOARDING_QUERY) !== 'true') return false;
-    localStorage.removeItem(ONBOARDING_COMPLETED_KEY);
-    url.searchParams.delete(RESET_ONBOARDING_QUERY);
-    const nextSearch = url.searchParams.toString();
-    const path = `${url.pathname}${nextSearch ? `?${nextSearch}` : ''}${url.hash}`;
-    window.history.replaceState(null, '', path);
-    window.location.reload();
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 function GateLoading() {
   return (
@@ -41,26 +21,37 @@ function GateLoading() {
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { session, initializing } = useAuth();
+  const { session } = useAuth();
+  const { appReady, onboardingCompleted, resetOnboardingInDb } = useProfileState();
   const [checked, setChecked] = useState(false);
   const [checkedPath, setCheckedPath] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initializing) return;
+    if (!appReady) return;
 
     setChecked(false);
     setCheckedPath(null);
-    if (applyResetOnboardingFromUrl()) return;
 
-    let done = false;
-    try {
-      done = localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
-    } catch {
-      done = false;
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get(RESET_ONBOARDING_QUERY) === 'true') {
+          void resetOnboardingInDb().then(() => {
+            url.searchParams.delete(RESET_ONBOARDING_QUERY);
+            const nextSearch = url.searchParams.toString();
+            const path = `${url.pathname}${nextSearch ? `?${nextSearch}` : ''}${url.hash}`;
+            window.history.replaceState(null, '', path);
+            window.location.reload();
+          });
+          return;
+        }
+      } catch {
+        // ignore
+      }
     }
 
     if (pathname === '/onboarding') {
-      if (done && session?.user) {
+      if (session?.user && onboardingCompleted) {
         router.replace('/');
         return;
       }
@@ -69,16 +60,21 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (!done) {
+    if (!session?.user) {
+      router.replace('/onboarding');
+      return;
+    }
+
+    if (!onboardingCompleted) {
       router.replace('/onboarding');
       return;
     }
 
     setChecked(true);
     setCheckedPath(pathname);
-  }, [pathname, router, session?.user, initializing]);
+  }, [appReady, pathname, router, session?.user, onboardingCompleted, resetOnboardingInDb]);
 
-  if (initializing || !checked || checkedPath !== pathname) {
+  if (!appReady || !checked || checkedPath !== pathname) {
     return <GateLoading />;
   }
 

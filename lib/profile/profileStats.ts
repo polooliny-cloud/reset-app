@@ -1,4 +1,4 @@
-import { getSkillLevel } from "@/lib/progression";
+import { calculateLevel } from "@/lib/profile/calculateLevel";
 import { PROFILE_LS_WINS_KEY, PROFILE_LS_XP_KEY } from "@/lib/profile/statsKeys";
 
 export type ProfileProgressValues = {
@@ -19,7 +19,7 @@ export function normalizeStats(xp: number, victories: number): ProfileProgressVa
   return {
     xp: safeXp,
     victories: safeV,
-    level: getSkillLevel(safeXp).level,
+    level: calculateLevel(safeXp),
   };
 }
 

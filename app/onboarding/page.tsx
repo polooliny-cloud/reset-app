@@ -3,9 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { useProfileState } from '@/app/components/ProfileProvider';
 import {
-  ONBOARDING_COMPLETED_KEY,
-  isOnboardingCompletedLocally,
+  clearOnboardingPendingAuthSession,
+  hasOnboardingPendingAuthSession,
+  setOnboardingPendingAuthSession,
 } from '@/lib/onboarding';
 import { useAuth } from '@/lib/auth/useAuth';
 import { captureEvent } from '@/lib/posthogCapture';
@@ -248,6 +250,7 @@ function Dots({ count, active }: { count: number; active: number }) {
 export default function OnboardingPage() {
   const router = useRouter();
   const { session, initializing } = useAuth();
+  const { onboardingCompleted, markOnboardingCompleted, appReady } = useProfileState();
   const [stage, setStage] = useState<Stage>('welcome');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [questionAnswers, setQuestionAnswers] = useState<(string | null)[]>(
@@ -260,7 +263,9 @@ export default function OnboardingPage() {
   const [platform, setPlatform] = useState<Platform | null>(null);
   const onboardingCompleteSent = useRef(false);
   const authResumeHandledRef = useRef(false);
-  const [authStandalone, setAuthStandalone] = useState(() => isOnboardingCompletedLocally());
+  const [authStandalone, setAuthStandalone] = useState(
+    () => hasOnboardingPendingAuthSession(),
+  );
 
   useEffect(() => {
     if (!session?.user) {
@@ -268,33 +273,37 @@ export default function OnboardingPage() {
     }
   }, [session?.user]);
 
-  /** Уже прошли онбординг раньше, но без аккаунта — сразу экран регистрации (как в онбординге). */
+  /** Прошли install-flow без входа — экран регистрации вместо welcome (sessionStorage, не source of truth). */
   useLayoutEffect(() => {
-    if (initializing) return;
-    if (session?.user) return;
-    if (typeof window === 'undefined') return;
-    try {
-      const done = localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
-      if (done) {
+    if (!appReady || initializing) return;
+    if (session?.user) {
+      if (onboardingCompleted) {
         setAuthStandalone(true);
-        setStage((prev) => (prev === 'welcome' ? 'authRegister' : prev));
+        setStage((prev) =>
+          prev === 'welcome' || prev === 'authRegister' || prev === 'authLogin'
+            ? 'authRegister'
+            : prev,
+        );
       }
-    } catch {
-      // ignore
+      return;
     }
-  }, [initializing, session?.user]);
+    if (hasOnboardingPendingAuthSession()) {
+      setAuthStandalone(true);
+      setStage((prev) => (prev === 'welcome' ? 'authRegister' : prev));
+    }
+  }, [appReady, initializing, session?.user, onboardingCompleted]);
 
   useEffect(() => {
     if (!session?.user) return;
     if (authResumeHandledRef.current) return;
 
     const resume = peekOnboardingResumeAfterMagicLink();
-    const completedBeforeAuth = isOnboardingCompletedLocally();
     const onAuthStage = stage === 'authRegister' || stage === 'authLogin';
 
-    if (resume === 'home' || (completedBeforeAuth && onAuthStage)) {
+    if (resume === 'home' || (onboardingCompleted && onAuthStage)) {
       authResumeHandledRef.current = true;
       clearOnboardingResumeAfterMagicLink();
+      clearOnboardingPendingAuthSession();
       captureEvent('auth_success');
       router.replace('/');
       return;
@@ -307,7 +316,7 @@ export default function OnboardingPage() {
     captureEvent('auth_success');
     setStage('question');
     setQuestionIndex(0);
-  }, [session?.user?.id, router, stage]);
+  }, [session?.user?.id, router, stage, onboardingCompleted]);
 
   useEffect(() => {
     if (stage === 'welcome' && !session?.user) {
@@ -374,29 +383,35 @@ export default function OnboardingPage() {
     captureEvent('install_instruction_viewed', { platform });
   }, [platform, stage]);
 
-  function completeOnboarding() {
+  async function completeOnboarding() {
     let alreadySent = onboardingCompleteSent.current;
     if (typeof window !== 'undefined') {
       try {
         alreadySent =
           alreadySent || localStorage.getItem(ONBOARDING_EVENT_DONE_KEY) === 'true';
-        localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
         localStorage.setItem(ONBOARDING_EVENT_DONE_KEY, 'true');
         clearOnboardingResumeAfterMagicLink();
       } catch {
         // ignore
       }
     }
+
+    if (session?.user) {
+      const result = await markOnboardingCompleted();
+      if (!result.ok) {
+        console.error('[onboarding] failed to persist onboarding_completed', result.error);
+      } else {
+        clearOnboardingPendingAuthSession();
+      }
+    } else {
+      setOnboardingPendingAuthSession();
+    }
+
     if (alreadySent) {
       onboardingCompleteSent.current = true;
       return;
     }
     onboardingCompleteSent.current = true;
-    try {
-      localStorage.setItem(ONBOARDING_EVENT_DONE_KEY, 'true');
-    } catch {
-      // ignore
-    }
     captureEvent('onboarding_completed', {
       platform,
     });
@@ -472,10 +487,10 @@ export default function OnboardingPage() {
     setStage('installInstruction');
   }
 
-  function handleOpenApp() {
+  async function handleOpenApp() {
     if (onboardingCompleteSent.current) return;
     captureEvent('install_flow_completed', { platform });
-    completeOnboarding();
+    await completeOnboarding();
     router.replace('/');
   }
 
@@ -692,6 +707,7 @@ export default function OnboardingPage() {
         {stage === 'authRegister' ? (
           <OnboardingOtpPanel
             mode="register"
+            magicLinkResume={onboardingCompleted || authStandalone ? 'home' : 'question'}
             hideBack={authStandalone}
             onSwitchToLogin={() => {
               captureEvent('auth_screen_viewed', { mode: 'login' });
@@ -707,6 +723,7 @@ export default function OnboardingPage() {
         {stage === 'authLogin' ? (
           <OnboardingOtpPanel
             mode="login"
+            magicLinkResume={onboardingCompleted || authStandalone ? 'home' : 'question'}
             hideBack={authStandalone}
             onSwitchToLogin={() => setStage('authLogin')}
             onSwitchToRegister={() => {

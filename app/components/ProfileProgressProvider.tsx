@@ -13,6 +13,11 @@ import {
 
 import { ensureProfileForUser } from "@/lib/profile/ensureProfile";
 import {
+  grantVictory,
+  type GrantVictoryResult,
+  type VictoryTrigger,
+} from "@/lib/profile/grantVictory";
+import {
   DEFAULT_PROFILE_STATS,
   mirrorStatsToLocal,
   normalizeStats,
@@ -39,7 +44,7 @@ export type ProfileProgressContextValue = {
   isBootstrapping: boolean;
   syncError: string | null;
   dismissSyncError: () => void;
-  applyProgress: (nextXp: number, nextVictories: number) => void;
+  awardVictory: (trigger: VictoryTrigger, xp: number) => Promise<GrantVictoryResult>;
   resetProgress: () => void;
   refetchProgress: () => Promise<void>;
 };
@@ -197,43 +202,71 @@ export function ProfileProgressProvider({ children }: { children: ReactNode }) {
 
   const dismissSyncError = useCallback(() => setSyncError(null), []);
 
-  const applyProgress = useCallback(
-    (nextXp: number, nextVictories: number) => {
-      if (!userId) return;
-      const next = normalizeStats(nextXp, nextVictories);
-      const prev = snapshotRef.current;
-      setSnapshot(next);
-      mirrorStatsToLocal(next);
+  const awardVictory = useCallback(
+    async (trigger: VictoryTrigger, xp: number): Promise<GrantVictoryResult> => {
+      if (!userId) {
+        return { ok: false, error: "Нужна авторизация" };
+      }
 
-      void runPersistExclusive(async () => {
-        const { error } = await supabase
-          .from("profiles")
-          .update({
-            xp: next.xp,
-            victories: next.victories,
-            level: next.level,
-          })
-          .eq("id", userId);
-        if (error) {
-          setSnapshot(prev);
-          mirrorStatsToLocal(prev);
-          setSyncError(error.message);
-          await refetchProgress();
-        }
-      }).catch(() => {
+      const prev = snapshotRef.current;
+      let result: GrantVictoryResult = { ok: false, error: "Не удалось сохранить прогресс" };
+
+      try {
+        await runPersistExclusive(async () => {
+          result = await grantVictory({ userId, trigger, xp });
+
+          if (!result.ok) {
+            setSyncError(result.error);
+            return;
+          }
+
+          const profile = result.duplicate ? result.profile : result.profile;
+          if (profile) {
+            const next = normalizeStats(profile.xp, profile.victories);
+            setSnapshot(next);
+            mirrorStatsToLocal(next);
+          } else {
+            await refetchProgress();
+          }
+
+          setSyncError(null);
+        });
+      } catch {
         setSnapshot(prev);
         mirrorStatsToLocal(prev);
         setSyncError("Не удалось сохранить прогресс");
         void refetchProgress();
-      });
+        result = { ok: false, error: "Не удалось сохранить прогресс" };
+      }
+
+      return result;
     },
     [userId, runPersistExclusive, refetchProgress],
   );
 
   const resetProgress = useCallback(() => {
     if (!userId) return;
-    applyProgress(0, 0);
-  }, [userId, applyProgress]);
+    const prev = snapshotRef.current;
+    const next = normalizeStats(0, 0);
+    setSnapshot(next);
+    mirrorStatsToLocal(next);
+    void runPersistExclusive(async () => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          xp: 0,
+          victories: 0,
+          level: 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+      if (error) {
+        setSnapshot(prev);
+        mirrorStatsToLocal(prev);
+        setSyncError(error.message);
+      }
+    });
+  }, [userId, runPersistExclusive]);
 
   const value = useMemo<ProfileProgressContextValue>(
     () => ({
@@ -243,7 +276,7 @@ export function ProfileProgressProvider({ children }: { children: ReactNode }) {
       isBootstrapping,
       syncError,
       dismissSyncError,
-      applyProgress,
+      awardVictory,
       resetProgress,
       refetchProgress,
     }),
@@ -254,7 +287,7 @@ export function ProfileProgressProvider({ children }: { children: ReactNode }) {
       isBootstrapping,
       syncError,
       dismissSyncError,
-      applyProgress,
+      awardVictory,
       resetProgress,
       refetchProgress,
     ],

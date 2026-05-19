@@ -1,3 +1,9 @@
+import {
+  calculateLevel,
+  xpThresholdForLevel,
+  xpThresholdForNextLevel,
+} from "@/lib/profile/calculateLevel";
+
 type Skill = {
   level: number;
   title: string;
@@ -26,17 +32,13 @@ function safeXp(xp: number): number {
 
 export function getSkillLevel(xp: number): Skill {
   const safe = safeXp(xp);
-  let current: Skill = SKILLS[0];
-
-  for (let i = 0; i < SKILLS.length; i++) {
-    if (safe >= SKILLS[i].xp) {
-      current = SKILLS[i];
-    } else {
-      break;
-    }
-  }
-
-  return current;
+  const level = calculateLevel(safe);
+  const titleSkill = SKILLS[Math.min(level - 1, SKILLS.length - 1)] ?? SKILLS[0];
+  return {
+    level,
+    title: titleSkill.title,
+    xp: xpThresholdForLevel(level),
+  };
 }
 
 export function getSkillProgress(xp: number): {
@@ -47,34 +49,28 @@ export function getSkillProgress(xp: number): {
   isMax: boolean;
 } {
   const safe = safeXp(xp);
-  let current: Skill = SKILLS[0];
-  let next: Skill | null = null;
+  const level = calculateLevel(safe);
+  const currentThreshold = xpThresholdForLevel(level);
+  const nextThreshold = xpThresholdForNextLevel(level);
 
-  for (let i = 0; i < SKILLS.length; i++) {
-    if (safe >= SKILLS[i].xp) {
-      current = SKILLS[i];
-      next = SKILLS[i + 1] ?? null;
-    }
-  }
-
-  if (!next) {
+  if (nextThreshold <= currentThreshold) {
     return {
       percent: 100,
       currentXp: safe,
-      requiredXp: current.xp,
-      nextXp: current.xp,
+      requiredXp: currentThreshold,
+      nextXp: currentThreshold,
       isMax: true,
     };
   }
 
-  const progressXp = safe - current.xp;
-  const requiredXp = next.xp - current.xp;
+  const progressXp = safe - currentThreshold;
+  const requiredXp = nextThreshold - currentThreshold;
 
   return {
     percent: Math.min((progressXp / requiredXp) * 100, 100),
     currentXp: progressXp,
     requiredXp,
-    nextXp: next.xp,
+    nextXp: nextThreshold,
     isMax: false,
   };
 }

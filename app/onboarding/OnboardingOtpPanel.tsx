@@ -15,7 +15,6 @@ import {
 } from "@/lib/auth/otpCooldownStorage";
 import { useAuth } from "@/lib/auth/useAuth";
 import { isValidEmail } from "@/lib/auth/validateEmail";
-import { isOnboardingCompletedLocally } from "@/lib/onboarding";
 import { openEmailApp } from "@/lib/openEmailApp";
 import { captureEvent } from "@/lib/posthogCapture";
 
@@ -25,11 +24,12 @@ import { OnboardingOtpSuccess } from "./OnboardingOtpSuccess";
 
 const RESUME_AFTER_AUTH_KEY = "onboarding_resume_after_magic_link";
 
+export type MagicLinkResumeTarget = "home" | "question";
+
 /** After magic link: `home` → main app; `question` → onboarding questions. */
-export function setOnboardingResumeAfterMagicLink() {
+export function setOnboardingResumeAfterMagicLink(target: MagicLinkResumeTarget) {
   if (typeof window === "undefined") return;
   try {
-    const target = isOnboardingCompletedLocally() ? "home" : "question";
     window.sessionStorage.setItem(RESUME_AFTER_AUTH_KEY, target);
   } catch {
     // ignore
@@ -62,6 +62,7 @@ type Props = {
   onSwitchToRegister: () => void;
   onBack: () => void;
   hideBack?: boolean;
+  magicLinkResume: MagicLinkResumeTarget;
 };
 
 export function OnboardingOtpPanel({
@@ -70,6 +71,7 @@ export function OnboardingOtpPanel({
   onSwitchToRegister,
   onBack,
   hideBack = false,
+  magicLinkResume,
 }: Props) {
   const { signInWithOtp } = useAuth();
   const [step, setStep] = useState<AuthStep>("form");
@@ -156,7 +158,7 @@ export function OnboardingOtpPanel({
 
     if (result.ok) {
       if (!result.treatAsSuccess) {
-        setOnboardingResumeAfterMagicLink();
+        setOnboardingResumeAfterMagicLink(magicLinkResume);
         captureEvent("magic_link_requested", { mode });
       }
       goToSuccess(

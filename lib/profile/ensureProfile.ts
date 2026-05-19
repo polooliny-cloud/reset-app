@@ -2,7 +2,6 @@ import type { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
-import { ONBOARDING_COMPLETED_KEY } from "@/lib/onboarding";
 
 export type EnsureProfileResult =
   | { ok: true; created: boolean }
@@ -10,19 +9,9 @@ export type EnsureProfileResult =
 
 const inflight = new Map<string, Promise<EnsureProfileResult>>();
 
-function readOnboardingCompletedFromStorage(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(ONBOARDING_COMPLETED_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
 /**
- * Ensures `public.profiles` has a row for the authenticated user.
- * Uses upsert with ON CONFLICT DO NOTHING so existing rows are untouched.
- * Client-side only; requires RLS insert for own id.
+ * Ensures a row exists in `public.profiles` for the authenticated user.
+ * New profiles start with onboarding_completed = false (DB default).
  */
 export async function ensureProfileForUser(
   client: SupabaseClient<Database>,
@@ -53,7 +42,7 @@ export async function ensureProfileForUser(
     const row: Database["public"]["Tables"]["profiles"]["Insert"] = {
       id: user.id,
       email: user.email ?? null,
-      onboarding_completed: readOnboardingCompletedFromStorage(),
+      onboarding_completed: false,
       trial_started_at: new Date().toISOString(),
       xp: 0,
       level: 1,
@@ -99,5 +88,4 @@ export async function ensureProfileForUser(
   return tracked;
 }
 
-/** Alias for callers that prefer `ensureProfile`. */
 export const ensureProfile = ensureProfileForUser;

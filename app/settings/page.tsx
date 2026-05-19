@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth/useAuth";
 import { clearOtpCooldownStorage } from "@/lib/auth/otpCooldownStorage";
 import { clearOnboardingResumeAfterMagicLink } from "@/app/onboarding/OnboardingOtpPanel";
+import { clearOnboardingPendingAuthSession } from "@/lib/onboarding";
 import { captureEvent } from "@/lib/posthogCapture";
 
 export default function SettingsPage() {
@@ -20,6 +21,7 @@ export default function SettingsPage() {
       captureEvent("auth_logout");
       clearOtpCooldownStorage();
       clearOnboardingResumeAfterMagicLink();
+      clearOnboardingPendingAuthSession();
       await signOut();
       router.replace("/onboarding");
     } finally {
