@@ -27,14 +27,27 @@ function applyResetOnboardingFromUrl(): boolean {
   }
 }
 
+function GateLoading() {
+  return (
+    <div className="flex min-h-screen flex-1 items-center justify-center bg-[#090d14]">
+      <div
+        className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-violet-300"
+        aria-hidden
+      />
+    </div>
+  );
+}
+
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { session } = useAuth();
+  const { session, initializing } = useAuth();
   const [checked, setChecked] = useState(false);
   const [checkedPath, setCheckedPath] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initializing) return;
+
     setChecked(false);
     setCheckedPath(null);
     if (applyResetOnboardingFromUrl()) return;
@@ -63,17 +76,10 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
 
     setChecked(true);
     setCheckedPath(pathname);
-  }, [pathname, router, session?.user]);
+  }, [pathname, router, session?.user, initializing]);
 
-  if (!checked || checkedPath !== pathname) {
-    return (
-      <div className="flex min-h-screen flex-1 items-center justify-center bg-[#090d14]">
-        <div
-          className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-violet-300"
-          aria-hidden
-        />
-      </div>
-    );
+  if (initializing || !checked || checkedPath !== pathname) {
+    return <GateLoading />;
   }
 
   return <>{children}</>;

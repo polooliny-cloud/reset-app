@@ -20,7 +20,6 @@ export type AuthOtpIntent = "register" | "login";
 export type SignInWithOtpResult = {
   ok: boolean;
   error: string | null;
-  /** Rate limit after a prior send — UI stays in success state. */
   treatAsSuccess?: boolean;
   cooldownSeconds?: number;
 };
@@ -28,7 +27,7 @@ export type SignInWithOtpResult = {
 export type AuthContextValue = {
   session: Session | null;
   user: User | null;
-  /** True until the first auth state is received from Supabase (incl. restored session). */
+  /** True until initial session hydration from storage / URL completes. */
   initializing: boolean;
   signInWithOtp: (
     email: string,
@@ -53,23 +52,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
+    let mounted = true;
 
-    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      if (cancelled) return;
-      setSession(initialSession);
+    void supabase.auth.getSession().then(({ data: { session: restored }, error }) => {
+      if (!mounted) return;
+
+      if (error) {
+        console.error("[auth] getSession failed", error.message, error);
+        setSession(null);
+      } else if (restored?.user) {
+        console.log("[auth] session restored", restored.user.id);
+        setSession(restored);
+      } else {
+        console.log("[auth] session missing");
+        setSession(null);
+      }
+
       setInitializing(false);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!mounted) return;
+
+      console.log("[auth] auth state changed", event, nextSession?.user?.id ?? "no-user");
+
+      if (nextSession?.user) {
+        console.log("[auth] user loaded", nextSession.user.id);
+      } else if (event === "SIGNED_OUT") {
+        console.log("[auth] session missing");
+      }
+
       setSession(nextSession);
       setInitializing(false);
     });
 
     return () => {
-      cancelled = true;
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -115,7 +135,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOutCb = useCallback(async () => {
-    await supabase.auth.signOut();
+    console.log("[auth] signOut requested");
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("[auth] signOut failed", error.message, error);
+    }
   }, []);
 
   const user = session?.user ?? null;

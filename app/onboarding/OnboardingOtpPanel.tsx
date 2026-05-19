@@ -16,6 +16,7 @@ import {
 import { useAuth } from "@/lib/auth/useAuth";
 import { isValidEmail } from "@/lib/auth/validateEmail";
 import { isOnboardingCompletedLocally } from "@/lib/onboarding";
+import { openEmailApp } from "@/lib/openEmailApp";
 import { captureEvent } from "@/lib/posthogCapture";
 
 import { OnboardingOtpBackButton } from "./OnboardingOtpBackButton";
@@ -178,7 +179,7 @@ export function OnboardingOtpPanel({
   }
 
   function handleOpenGmail() {
-    window.open("https://mail.google.com", "_blank", "noopener,noreferrer");
+    openEmailApp();
   }
 
   function resetToForm() {
