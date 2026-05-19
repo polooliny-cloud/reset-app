@@ -27,7 +27,7 @@ export function OnboardingOtpSuccess({
     <div className="surface-card animate-onboarding-step px-5 py-7">
       <p className="text-center text-sm uppercase tracking-[0.18em] text-white/75">Reset</p>
       <h1 className="text-title text-measure mt-6 text-center text-[1.65rem] font-semibold leading-tight text-white sm:text-[1.85rem]">
-        Проверь почту
+        Проверьте почту
       </h1>
       <div className="text-body text-measure mt-3 text-center text-[15px] leading-relaxed text-[#9A9AA0]">
         <p>Мы отправили ссылку для входа на:</p>

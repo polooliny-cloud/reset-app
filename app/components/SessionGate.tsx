@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
 
+import { isDevNavBypassActive } from "@/lib/dev/localNav";
 import { useAuth } from "@/lib/auth/useAuth";
 
 function SessionLoading() {
@@ -24,6 +25,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (initializing) return;
+    if (isDevNavBypassActive()) return;
     if (session?.user) {
       redirectingRef.current = false;
       return;
@@ -38,7 +40,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
     return <SessionLoading />;
   }
 
-  if (!session?.user && pathname !== "/onboarding") {
+  if (!session?.user && pathname !== "/onboarding" && !isDevNavBypassActive()) {
     return <SessionLoading />;
   }
 

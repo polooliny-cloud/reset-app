@@ -30,6 +30,10 @@ const EDGE_OFFSET = 16;
 const TOP_OFFSET = 8;
 const ABSTINENCE_DEADLINE_DAYS_KEY = 'abstinence_deadline_days';
 const ABSTINENCE_DEADLINE_HOURS_KEY = 'abstinence_deadline_hours';
+const ABSTINENCE_DEADLINE_MINUTES_KEY = 'abstinence_deadline_minutes';
+
+const homeIconActionClass =
+  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/78 text-slate-100/90 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95';
 
 function pad(n: number) {
   return n.toString().padStart(2, '0');
@@ -105,6 +109,7 @@ export default function Home() {
   const [showInstallFlow, setShowInstallFlow] = useState(false);
   const [deadlineDaysInput, setDeadlineDaysInput] = useState('');
   const [deadlineHoursInput, setDeadlineHoursInput] = useState('');
+  const [deadlineMinutesInput, setDeadlineMinutesInput] = useState('');
   const topInset = `calc(${TOP_OFFSET}px + env(safe-area-inset-top))`;
   const leftInset = `calc(${EDGE_OFFSET}px + env(safe-area-inset-left))`;
   const rightInset = `calc(${EDGE_OFFSET}px + env(safe-area-inset-right))`;
@@ -153,8 +158,10 @@ export default function Home() {
     if (typeof window === 'undefined' || pathname !== '/') return;
     const storedDays = localStorage.getItem(ABSTINENCE_DEADLINE_DAYS_KEY) ?? '';
     const storedHours = localStorage.getItem(ABSTINENCE_DEADLINE_HOURS_KEY) ?? '';
+    const storedMinutes = localStorage.getItem(ABSTINENCE_DEADLINE_MINUTES_KEY) ?? '';
     setDeadlineDaysInput(storedDays);
     setDeadlineHoursInput(storedHours);
+    setDeadlineMinutesInput(storedMinutes);
   }, [pathname]);
 
   function handleConfirmReset() {
@@ -167,6 +174,7 @@ export default function Home() {
     localStorage.removeItem(PROFILE_LS_WINS_KEY);
     localStorage.removeItem(PROFILE_LS_XP_KEY);
     localStorage.removeItem(MISSION_CLAIMED_KEY);
+    localStorage.removeItem(ABSTINENCE_DEADLINE_MINUTES_KEY);
     setClaimedMissionCount(0);
     setMissionModal(null);
     setShowResetModal(false);
@@ -198,13 +206,26 @@ export default function Home() {
     setDeadlineHoursInput(String(numeric));
   }
 
+  function handleMinutesChange(value: string) {
+    const normalized = normalizeNumericInput(value);
+    if (normalized === '') {
+      setDeadlineMinutesInput('');
+      return;
+    }
+    const numeric = Math.min(Number(normalized), 59);
+    setDeadlineMinutesInput(String(numeric));
+  }
+
   const deadlineDays = Number(deadlineDaysInput || '0');
   const deadlineHours = Number(deadlineHoursInput || '0');
+  const deadlineMinutes = Number(deadlineMinutesInput || '0');
   const canConfirmDeadline =
     Number.isFinite(deadlineDays) &&
     Number.isFinite(deadlineHours) &&
+    Number.isFinite(deadlineMinutes) &&
     deadlineHours <= 24 &&
-    (deadlineDays > 0 || deadlineHours > 0);
+    deadlineMinutes <= 59 &&
+    (deadlineDays > 0 || deadlineHours > 0 || deadlineMinutes > 0);
 
   const elapsedMs = streakStartMs ? Math.max(nowMs - streakStartMs, 0) : 0;
   const missionStatus = resolveMissionStatus(elapsedMs, claimedMissionCount);
@@ -252,11 +273,15 @@ export default function Home() {
   function handleConfirmDeadline() {
     if (!canConfirmDeadline) return;
     const nowMs = Date.now();
-    const offsetMs = (deadlineDays * 24 + deadlineHours) * 3_600_000;
+    const offsetMs =
+      deadlineDays * 86_400_000 +
+      deadlineHours * 3_600_000 +
+      deadlineMinutes * 60_000;
     const startDateIso = new Date(nowMs - offsetMs).toISOString();
     try {
       localStorage.setItem(ABSTINENCE_DEADLINE_DAYS_KEY, String(deadlineDays));
       localStorage.setItem(ABSTINENCE_DEADLINE_HOURS_KEY, String(deadlineHours));
+      localStorage.setItem(ABSTINENCE_DEADLINE_MINUTES_KEY, String(deadlineMinutes));
       localStorage.setItem(STORAGE_KEY, startDateIso);
     } catch {
       // ignore
@@ -343,14 +368,14 @@ export default function Home() {
 
             <div className="mx-auto mt-10 flex w-full max-w-md flex-1 flex-col pt-8">
               <h1 className="text-flow-heading text-center text-2xl font-semibold text-white">
-                Выставь срок своего воздержания
+                Выставьте срок своего воздержания
               </h1>
               <p className="text-flow mt-3 text-center text-sm text-[#9A9AA0]">
-                Если ты уже в процессе воздержания
+                Если вы уже в процессе воздержания
               </p>
 
               <div className="surface-card mt-8 p-5">
-                <div className="mx-auto flex max-w-[18rem] items-end justify-center gap-3">
+                <div className="mx-auto flex max-w-[15rem] items-end justify-center gap-2">
                   <div className="flex min-w-0 flex-1 flex-col">
                     <label
                       htmlFor="deadline-days"
@@ -366,7 +391,7 @@ export default function Home() {
                       value={deadlineDaysInput}
                       onChange={(e) => handleDaysChange(e.target.value)}
                       placeholder="0"
-                      className="glass-input h-12 w-full px-4 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-slate-500 focus:border-violet-300/40"
+                      className="glass-input h-11 w-full px-2 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-slate-500 focus:border-violet-300/40"
                     />
                   </div>
 
@@ -385,7 +410,26 @@ export default function Home() {
                       value={deadlineHoursInput}
                       onChange={(e) => handleHoursChange(e.target.value)}
                       placeholder="0"
-                      className="glass-input h-12 w-full px-4 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-slate-500 focus:border-violet-300/40"
+                      className="glass-input h-11 w-full px-2 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-slate-500 focus:border-violet-300/40"
+                    />
+                  </div>
+
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <label
+                      htmlFor="deadline-minutes"
+                      className="text-flow mb-2 text-center text-xs text-[#9A9AA0]"
+                    >
+                      Минуты
+                    </label>
+                    <input
+                      id="deadline-minutes"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={deadlineMinutesInput}
+                      onChange={(e) => handleMinutesChange(e.target.value)}
+                      placeholder="0"
+                      className="glass-input h-11 w-full px-2 text-center text-base font-semibold text-white outline-none transition duration-200 ease-out placeholder:text-slate-500 focus:border-violet-300/40"
                     />
                   </div>
                 </div>
@@ -401,9 +445,9 @@ export default function Home() {
         </main>
       ) : (
       <main className="app-shell flex min-h-screen flex-col px-4 pb-6 pt-5 sm:px-6">
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-12">
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-10">
         <div
-          className="absolute left-0 right-0 z-40 flex items-center justify-between"
+          className="absolute left-0 right-0 z-40"
           style={{
             top: topInset,
             paddingLeft: leftInset,
@@ -413,67 +457,9 @@ export default function Home() {
           <p className="text-left text-[1.1375rem] font-normal uppercase leading-none tracking-[0.18em] text-white/75">
             Reset
           </p>
-          <div className="flex flex-row-reverse items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setScreen('wins')}
-              className="inline-flex origin-center cursor-pointer items-center gap-1.5 rounded-full border border-slate-300/20 bg-slate-900/78 px-3 py-1.5 text-violet-300 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
-              aria-label={`Побед: ${wins}`}
-            >
-              <span aria-hidden>🔥</span>
-              <span className="text-base font-semibold tabular-nums text-white">{wins}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setScreen('deadline')}
-              aria-label="Срок воздержания"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/78 text-slate-100/90 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
-            >
-              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="8.25"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  opacity="0.9"
-                />
-                <path
-                  d="M12 8.5V12L14.8 13.8"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-
-            <Link
-              href="/settings"
-              aria-label="Настройки"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-300/20 bg-slate-900/78 text-slate-100/90 shadow-[0_8px_18px_rgba(2,6,23,0.35)] transition duration-200 ease-out hover:bg-slate-800/82 active:scale-95"
-            >
-              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
-                <circle
-                  cx="12"
-                  cy="9"
-                  r="3.25"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                />
-                <path
-                  d="M5.25 19.25c0-3.45 2.9-6.25 6.75-6.25s6.75 2.8 6.75 6.25"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </Link>
-          </div>
         </div>
 
-        <div className="mx-auto mt-10 flex w-full max-w-md flex-1 flex-col pt-8">
+        <div className="mx-auto mt-6 flex w-full max-w-md flex-1 flex-col pt-6">
           <div className="surface-card flex min-h-[10rem] flex-col items-center justify-center px-6 py-8">
             <StreakClock onDaysChange={setDaysCount} />
           </div>
@@ -481,7 +467,7 @@ export default function Home() {
           <div className="surface-card mt-5 p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-flow text-lg font-semibold text-white">Твоё задание</p>
+                <p className="text-flow text-lg font-semibold text-white">Ваше задание</p>
                 <p className="text-flow mt-2 text-sm text-[#B0B8C8]">Продержаться:</p>
               </div>
               <button
@@ -496,7 +482,7 @@ export default function Home() {
             <div className="mt-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 {missionStatus.pendingRewards > 0 ? (
-                  <p className="text-flow text-base font-medium text-violet-200">Забери награду</p>
+                  <p className="text-flow text-base font-medium text-violet-200">Заберите награду</p>
                 ) : (
                   <p className="font-mono text-2xl tracking-[0.02em] text-white">{missionCountdown}</p>
                 )}
@@ -528,22 +514,101 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-1 sm:justify-between">
+          <nav
+            className="mt-5 flex items-center justify-between gap-1 px-0.5"
+            aria-label="Быстрые действия"
+          >
+            <Link
+              href="/settings"
+              aria-label="Профиль"
+              className={homeIconActionClass}
+            >
+              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+                <circle cx="12" cy="9" r="3.25" stroke="currentColor" strokeWidth="1.75" />
+                <path
+                  d="M5.25 19.25c0-3.45 2.9-6.25 6.75-6.25s6.75 2.8 6.75 6.25"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </Link>
+
             <button
               type="button"
               onClick={handleManualInstallOpen}
-              className="secondary-link !w-auto"
+              aria-label="Скачать приложение"
+              className={homeIconActionClass}
             >
-              Скачать
+              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+                <path
+                  d="M12 4v9m0 0l3.5-3.5M12 13l-3.5-3.5M6 18h12"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setScreen('wins')}
+              aria-label={`Побед: ${wins}`}
+              className={`${homeIconActionClass} text-base`}
+            >
+              <span aria-hidden>🔥</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setScreen('deadline')}
+              aria-label="Срок воздержания"
+              className={homeIconActionClass}
+            >
+              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="8.25"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  opacity="0.9"
+                />
+                <path
+                  d="M12 8.5V12L14.8 13.8"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
             <button
               type="button"
               onClick={() => setShowResetModal(true)}
-              className="secondary-link !w-auto"
+              aria-label="Сбросить прогресс"
+              className={homeIconActionClass}
             >
-              Сбросить
+              <svg aria-hidden viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none">
+                <path
+                  d="M4 12a8 8 0 0113.66-5.66M20 12a8 8 0 01-13.66 5.66"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M20 8v4h-4M4 16v-4h4"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
-          </div>
+          </nav>
 
           <div className="mt-auto w-full pb-[calc(32px+env(safe-area-inset-bottom))] pt-6">
             <Link
@@ -576,10 +641,10 @@ export default function Home() {
               className="text-center text-base text-white"
             >
               <p className="text-flow mb-0">
-                Ты точно хочешь сбросить свой прогресс?
+                Вы точно хотите сбросить свой прогресс?
               </p>
               <p className="text-flow mb-0 mt-2">
-                Если ты сорвался — будь честен перед собой.
+                Если вы сорвались, будьте честны перед собой.
               </p>
             </div>
             <div className="mt-6 flex flex-row gap-3">
@@ -637,7 +702,7 @@ export default function Home() {
               Задание не выполнено
             </p>
             <p className="text-flow mt-3 text-center text-sm text-[#D4D4D8]">
-              Нам нравится твоё стремление. Оставайся таким же мотивированным и не забывай, зачем ты это делаешь. Возвращайся сюда, когда выполнишь задание и забирай награду.
+              Нам нравится ваше стремление. Оставайтесь таким же мотивированным и не забывайте, зачем вы это делаете. Возвращайтесь сюда, когда выполните задание, и забирайте награду.
             </p>
             <button
               type="button"

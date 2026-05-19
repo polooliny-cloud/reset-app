@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 import { useProfileState } from '@/app/components/ProfileProvider';
 import { RESET_ONBOARDING_QUERY } from '@/lib/onboarding';
+import { isDevNavBypassActive } from '@/lib/dev/localNav';
 import { useAuth } from '@/lib/auth/useAuth';
 
 function GateLoading() {
@@ -48,6 +49,12 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
       } catch {
         // ignore
       }
+    }
+
+    if (isDevNavBypassActive()) {
+      setChecked(true);
+      setCheckedPath(pathname);
+      return;
     }
 
     if (pathname === '/onboarding') {

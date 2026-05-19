@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { AnalyticsAppMount } from "./components/AnalyticsAppMount";
 import { AuthProvider } from "./components/AuthProvider";
-import { OnboardingDevReset } from "./components/OnboardingDevReset";
+import { DevTools } from "./components/DevTools";
 import { OnboardingGate } from "./components/OnboardingGate";
 import { PostHogProvider } from "./components/PostHogProvider";
 import { ProfileProvider } from "./components/ProfileProvider";
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     default: "Reset",
     template: "%s | Reset",
   },
-  description: "Reset — контроль и дисциплина",
+  description: "Reset: контроль и дисциплина",
   icons: [
     { rel: "icon", url: "/favicon.png" },
     { rel: "apple-touch-icon", url: "/icons/icon-192.png" },
@@ -61,7 +61,7 @@ export default function RootLayout({
               <ProfileProvider>
                 <ProfileProgressProvider>
                   <OnboardingGate>{children}</OnboardingGate>
-                  <OnboardingDevReset />
+                  <DevTools />
                 </ProfileProgressProvider>
               </ProfileProvider>
             </SessionGate>

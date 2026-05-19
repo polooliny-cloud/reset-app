@@ -186,7 +186,7 @@ const featureSlides = [
   },
   {
     emoji: '😌',
-    title: 'Победи себя',
+    title: 'Победите себя',
     text: [
       'Поймите свои сильные и слабые стороны.',
       'Развивайте самоконтроль и отслеживайте прогресс.',
@@ -831,9 +831,9 @@ export default function OnboardingPage() {
           <>
             <BackButton onClick={handleBack} />
             <div className="mx-auto flex w-full max-w-md flex-1 flex-col pt-[calc(70px+env(safe-area-inset-top))]">
-              <h1 className="text-center text-2xl font-semibold text-white">Выбери свои цели</h1>
+              <h1 className="text-center text-2xl font-semibold text-white">Выберите свои цели</h1>
               <p className="text-body text-measure mx-auto mt-3 text-center text-sm text-[#9A9AA0]">
-                Выбери цели, которых хочешь достичь во время перезагрузки
+                Выберите цели, которых хотите достичь во время перезагрузки
               </p>
               <div className="mt-5 min-h-0 flex-1 overflow-y-auto pb-[calc(106px+env(safe-area-inset-bottom))] pr-1">
                 <div className="space-y-2">
@@ -875,7 +875,7 @@ export default function OnboardingPage() {
             <BackButton onClick={handleBack} />
             <div className="mx-auto flex w-full max-w-md flex-1 flex-col pt-[calc(70px+env(safe-area-inset-top))] pb-[calc(16px+env(safe-area-inset-bottom))]">
               <h1 className="text-title text-measure mx-auto text-center text-2xl font-semibold text-white">
-                Скачай приложение, чтобы оно всегда было рядом
+                Скачайте приложение, чтобы оно всегда было рядом
               </h1>
               <div className="mt-8 flex flex-col gap-3">
                 <button
@@ -901,22 +901,22 @@ export default function OnboardingPage() {
           <>
             <BackButton onClick={handleBack} />
             <div className="mx-auto flex w-full max-w-md flex-1 flex-col pt-[calc(70px+env(safe-area-inset-top))] pb-[calc(16px+env(safe-area-inset-bottom))]">
-              <h1 className="text-center text-2xl font-semibold text-white">Следуй инструкции</h1>
+              <h1 className="text-center text-2xl font-semibold text-white">Следуйте инструкции</h1>
               <p className="text-body text-measure mt-2 text-center text-sm text-[#9A9AA0]">
                 Это займет 10 секунд
               </p>
               <ol className="text-body mt-7 space-y-4 rounded-3xl border border-slate-300/20 bg-slate-900/60 p-5 text-sm text-[#D4D4D8] backdrop-blur-md">
                 {platform === 'android' ? (
                   <>
-                    <li>1. Нажми на три точки в правом верхнем углу браузера</li>
-                    <li>2. Выбери: Добавить на главный экран</li>
-                    <li>3. Подтверди установку</li>
+                    <li>1. Нажмите на три точки в правом верхнем углу браузера</li>
+                    <li>2. Выберите: Добавить на главный экран</li>
+                    <li>3. Подтвердите установку</li>
                   </>
                 ) : (
                   <>
-                    <li>1. Нажми кнопку Поделиться</li>
-                    <li>2. Выбери: На экран Домой</li>
-                    <li>3. Подтверди добавление</li>
+                    <li>1. Нажмите кнопку Поделиться</li>
+                    <li>2. Выберите: На экран Домой</li>
+                    <li>3. Подтвердите добавление</li>
                   </>
                 )}
               </ol>

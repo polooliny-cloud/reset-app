@@ -64,7 +64,7 @@ export function InstallFlowModal({
         {screen === 'device' ? (
           <>
             <h2 className="text-title text-measure text-center text-2xl font-semibold text-white">
-              Как ты будешь устанавливать?
+              Как вы будете устанавливать?
             </h2>
             <p className="text-body text-measure mt-2 text-center text-sm text-[#9A9AA0]">
               Это займёт 10 секунд
@@ -94,15 +94,15 @@ export function InstallFlowModal({
               Установка на Android
             </h2>
             <ol className="text-body text-measure mt-5 space-y-3 text-sm text-[#D4D4D8]">
-              <li>1. Нажми на три точки в правом верхнем углу</li>
-              <li>2. Выбери «Добавить на главный экран»</li>
-              <li>3. Подтверди установку</li>
+              <li>1. Нажмите на три точки в правом верхнем углу</li>
+              <li>2. Выберите «Добавить на главный экран»</li>
+              <li>3. Подтвердите установку</li>
             </ol>
             <p className="text-body text-measure mt-5 text-sm text-[#9A9AA0]">
-              После этого открой приложение с экрана телефона
+              После этого откройте приложение с экрана телефона
             </p>
             <p className="text-body text-measure mt-2 text-sm text-[#9A9AA0]">
-              Когда добавишь на экран, открывай приложение оттуда
+              Когда добавите на экран, открывайте приложение оттуда
             </p>
             <button
               type="button"
@@ -120,15 +120,15 @@ export function InstallFlowModal({
               Установка на iPhone
             </h2>
             <ol className="text-body text-measure mt-5 space-y-3 text-sm text-[#D4D4D8]">
-              <li>1. Нажми кнопку «Поделиться»</li>
-              <li>2. Выбери «На экран Домой»</li>
-              <li>3. Нажми «Добавить»</li>
+              <li>1. Нажмите кнопку «Поделиться»</li>
+              <li>2. Выберите «На экран Домой»</li>
+              <li>3. Нажмите «Добавить»</li>
             </ol>
             <p className="text-body text-measure mt-5 text-sm text-[#9A9AA0]">
-              После этого открой приложение с экрана телефона
+              После этого откройте приложение с экрана телефона
             </p>
             <p className="text-body text-measure mt-2 text-sm text-[#9A9AA0]">
-              Когда добавишь на экран, открывай приложение оттуда
+              Когда добавите на экран, открывайте приложение оттуда
             </p>
             <button
               type="button"

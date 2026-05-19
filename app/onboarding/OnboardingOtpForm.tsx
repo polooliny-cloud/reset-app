@@ -47,7 +47,7 @@ export function OnboardingOtpForm({
   }
 
   const title =
-    mode === "register" ? "Создай свой аккаунт в Reset" : "Рады снова вас видеть";
+    mode === "register" ? "Создайте свой аккаунт в Reset" : "Рады снова вас видеть";
   const subtitle =
     mode === "register"
       ? "Введи почту, чтобы присоединиться"
