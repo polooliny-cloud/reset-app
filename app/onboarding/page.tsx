@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { usePremium } from '@/app/components/PremiumProvider';
 import { useProfileState } from '@/app/components/ProfileProvider';
 import {
   clearOnboardingPendingAuthSession,
@@ -10,8 +11,11 @@ import {
   setOnboardingPendingAuthSession,
 } from '@/lib/onboarding';
 import { useAuth } from '@/lib/auth/useAuth';
+import { ensureProfileForUser } from '@/lib/profile/ensureProfile';
 import { startFreeTrialClient } from '@/lib/premium/clientBilling';
+import { markTrialActivationPending } from '@/lib/premium/trialActivationPending';
 import { captureEvent } from '@/lib/posthogCapture';
+import { supabase } from '@/lib/supabase';
 
 import {
   OnboardingOtpPanel,
@@ -251,6 +255,7 @@ function Dots({ count, active }: { count: number; active: number }) {
 export default function OnboardingPage() {
   const router = useRouter();
   const { session, initializing } = useAuth();
+  const { applyPremiumState, refetch: refetchPremium } = usePremium();
   const { onboardingCompleted, markOnboardingCompleted, appReady } = useProfileState();
   const [stage, setStage] = useState<Stage>('welcome');
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -268,6 +273,7 @@ export default function OnboardingPage() {
     () => hasOnboardingPendingAuthSession(),
   );
   const [trialStarting, setTrialStarting] = useState(false);
+  const [trialError, setTrialError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session?.user) {
@@ -492,19 +498,45 @@ export default function OnboardingPage() {
   async function handleStartFreeTrialAndOpen() {
     if (onboardingCompleteSent.current || trialStarting) return;
     setTrialStarting(true);
+    setTrialError(null);
     captureEvent('install_flow_completed', { platform });
 
-    if (session?.user) {
-      try {
-        await startFreeTrialClient();
-      } catch {
-        // trial may already be used — still open the app
-      }
+    if (!session?.user) {
+      setTrialError('Сначала войдите в аккаунт, чтобы активировать пробный период.');
+      setTrialStarting(false);
+      return;
     }
 
-    await completeOnboarding();
+    try {
+      const ensured = await ensureProfileForUser(supabase, session.user);
+      if (!ensured.ok) {
+        setTrialError(ensured.error);
+        setTrialStarting(false);
+        return;
+      }
+
+      const trial = await startFreeTrialClient();
+
+      if (trial.ok) {
+        applyPremiumState(trial.state);
+        markTrialActivationPending();
+      } else if (trial.code === 'trial_already_used') {
+        await refetchPremium();
+      } else {
+        setTrialError(trial.error);
+        setTrialStarting(false);
+        return;
+      }
+
+      await completeOnboarding();
+      router.replace('/');
+    } catch (e) {
+      setTrialError(e instanceof Error ? e.message : 'Не удалось активировать пробный период');
+      setTrialStarting(false);
+      return;
+    }
+
     setTrialStarting(false);
-    router.replace('/');
   }
 
   function handleBack() {
@@ -934,17 +966,24 @@ export default function OnboardingPage() {
                 )}
               </ol>
               <div className="mt-auto pt-6">
+                {trialError ? (
+                  <p className="mb-3 text-center text-sm text-[#FFB6BD]" role="alert">
+                    {trialError}
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => void handleStartFreeTrialAndOpen()}
                   disabled={trialStarting}
                   className="primary-cta"
                 >
-                  {trialStarting ? 'Открываем приложение…' : 'Начать 3 дня бесплатно'}
+                  {trialStarting
+                    ? 'Активируем пробный период…'
+                    : 'Начать 3 дня бесплатно'}
                 </button>
                 <p className="text-measure mt-3 text-center text-xs leading-relaxed text-[#9A9AA0]">
                   Пробный период активируется сразу. Списание не произойдёт автоматически — вы
-                  попадёте в приложение и сможете пользоваться Reset+.
+                  попадёте в приложение с открытым Reset+.
                 </p>
               </div>
             </div>

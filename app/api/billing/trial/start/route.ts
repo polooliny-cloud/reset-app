@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { fetchPremiumStateForUser } from "@/lib/billing/fetchPremiumData";
+import { billingLog } from "@/lib/billing/log";
 import { startFreeTrial } from "@/lib/billing/startFreeTrial";
 import { getUserIdFromRequest } from "@/lib/billing/authFromRequest";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -12,14 +13,22 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const userId = await getUserIdFromRequest(request);
   if (!userId) {
+    billingLog("trial_request_unauthorized", {}, "warn");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  billingLog("trial_request_received", { userId });
 
   try {
     const admin = createAdminClient();
     const result = await startFreeTrial(admin, userId);
 
     if (!result.ok) {
+      billingLog(
+        "trial_activation_failed",
+        { userId, code: result.code, error: result.error },
+        "error",
+      );
       const status = result.code === "trial_already_used" ? 409 : 400;
       return NextResponse.json({ error: result.error, code: result.code }, { status });
     }
@@ -29,6 +38,13 @@ export async function POST(request: Request) {
     const reader = createClient<Database>(url, anonKey);
     const state = await fetchPremiumStateForUser(reader, userId);
 
+    billingLog("trial_activation_success", {
+      userId,
+      premiumUntil: result.premiumUntil,
+      isPremium: state.isPremium,
+      isTrial: state.isTrial,
+    });
+
     return NextResponse.json({
       ok: true,
       premiumUntil: result.premiumUntil,
@@ -36,7 +52,7 @@ export async function POST(request: Request) {
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Trial start failed";
-    console.error("[trial] api failed", message);
+    billingLog("trial_activation_failed", { userId, error: message }, "error");
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

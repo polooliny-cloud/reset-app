@@ -53,8 +53,9 @@ export function getPremiumState(input: {
   const isPremiumActive = premiumActive || subEntitled;
 
   const isTrial =
-    subscription?.status === "trialing" ||
-    (isPremiumActive && subscription?.plan === "free_trial");
+    isPremiumActive &&
+    subscription?.plan === "free_trial" &&
+    subscription?.status === "trialing";
 
   const subscriptionStatus =
     subscription?.status && ["active", "expired", "cancelled", "trialing"].includes(subscription.status)

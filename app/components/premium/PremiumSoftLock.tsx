@@ -23,6 +23,7 @@ export function PremiumSoftLock({
   className = "",
 }: Props) {
   const { isPremium, loading } = usePremium();
+  /** Do not show locked UI while premium state is still loading (e.g. after onboarding trial). */
   const isLocked = locked ?? (!loading && !isPremium);
   const isCompact = layout === "compact";
   const showTitle = Boolean(title?.trim());

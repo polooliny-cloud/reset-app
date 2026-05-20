@@ -14,12 +14,15 @@ import { fetchPremiumStateForUser } from "@/lib/billing/fetchPremiumData";
 import type { PremiumState } from "@/lib/billing/types";
 import { useAuth } from "@/lib/auth/useAuth";
 import { isDevNavBypassActive } from "@/lib/dev/localNav";
+import { consumeTrialActivationPending } from "@/lib/premium/trialActivationPending";
 import { supabase } from "@/lib/supabase";
 
 export type PremiumContextValue = PremiumState & {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  /** Apply server-returned state without waiting for another fetch (onboarding trial). */
+  applyPremiumState: (next: PremiumState) => void;
 };
 
 const defaultState: PremiumContextValue = {
@@ -32,6 +35,7 @@ const defaultState: PremiumContextValue = {
   loading: true,
   error: null,
   refetch: async () => {},
+  applyPremiumState: () => {},
 };
 
 const PremiumContext = createContext<PremiumContextValue>(defaultState);
@@ -58,6 +62,13 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const applyPremiumState = useCallback((next: PremiumState) => {
+    setState(next);
+    setError(null);
+    setLoading(false);
+    console.log("[billing] premium state applied from server", next);
+  }, []);
 
   const refetch = useCallback(async () => {
     if (!userId) {
@@ -106,6 +117,9 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (authLoading) return;
+    if (consumeTrialActivationPending()) {
+      setLoading(true);
+    }
     void refetch();
   }, [authLoading, refetch]);
 
@@ -175,8 +189,9 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       loading: authLoading || loading,
       error,
       refetch,
+      applyPremiumState,
     }),
-    [state, authLoading, loading, error, refetch],
+    [state, authLoading, loading, error, refetch, applyPremiumState],
   );
 
   return <PremiumContext.Provider value={value}>{children}</PremiumContext.Provider>;

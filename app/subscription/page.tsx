@@ -28,7 +28,7 @@ const PLANS: { id: LavaCheckoutPlan; label: string; price: string; badge?: strin
 
 export default function SubscriptionPage() {
   const premium = usePremium();
-  const { refetch, loading, canStartTrial } = premium;
+  const { refetch, applyPremiumState, loading, canStartTrial } = premium;
   const header = getPremiumHeaderCopy(premium);
   const statusKind = getPremiumStatusKind(premium);
 
@@ -61,7 +61,7 @@ export default function SubscriptionPage() {
       setError(result.error);
       return;
     }
-    await refetch();
+    applyPremiumState(result.state);
     setMessage("Пробный период активирован на 3 дня. Списание не произойдёт автоматически.");
   }
 
@@ -117,7 +117,14 @@ export default function SubscriptionPage() {
             }`}
           >
             <p className="text-base font-semibold text-white">{loading ? "Загрузка…" : header.title}</p>
-            <p className="text-measure mt-1.5 text-sm text-[#A8A8AE]">{header.subtitle}</p>
+            {!loading && statusKind !== "none" ? (
+              <p className="text-measure mt-1.5 text-sm text-[#A8A8AE]">{header.subtitle}</p>
+            ) : null}
+            {!loading && statusKind === "none" ? (
+              <p className="text-measure mt-1.5 text-sm text-[#A8A8AE]">
+                Активируйте пробный период или оформите подписку, чтобы открыть Reset+.
+              </p>
+            ) : null}
             {statusKind === "trial" ? (
               <p className="mt-3 text-xs text-violet-200/80">
                 Списание не произойдёт автоматически. После trial вы сможете оформить подписку вручную.

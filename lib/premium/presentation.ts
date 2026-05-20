@@ -1,11 +1,12 @@
 import type { PremiumState } from "@/lib/billing/types";
+import { FREE_TRIAL_DAYS } from "@/lib/billing/types";
 
 export type PremiumStatusKind = "trial" | "premium" | "none";
 
 export function getPremiumStatusKind(state: PremiumState): PremiumStatusKind {
-  if (state.isPremium && state.isTrial) return "trial";
-  if (state.isPremium) return "premium";
-  return "none";
+  if (!state.isPremium) return "none";
+  if (state.isTrial) return "trial";
+  return "premium";
 }
 
 export function getDaysRemaining(untilIso: string | null, nowMs = Date.now()): number | null {
@@ -36,17 +37,25 @@ export function getPremiumHeaderCopy(state: PremiumState): {
 
   if (kind === "trial" && state.premiumUntil) {
     const days = getDaysRemaining(state.premiumUntil);
-    const daysLabel =
-      days === null
-        ? ""
-        : days === 0
+    const trialDaysValid =
+      days !== null && days >= 0 && days <= FREE_TRIAL_DAYS + 1;
+
+    if (trialDaysValid) {
+      const daysLabel =
+        days === 0
           ? "Заканчивается сегодня"
           : days === 1
             ? "Остался 1 день"
             : `Осталось ${days} ${days === 2 || days === 3 || days === 4 ? "дня" : "дней"}`;
+      return {
+        title: "Пробный период активен",
+        subtitle: `${daysLabel} · до ${formatDateRu(state.premiumUntil)}`,
+      };
+    }
+
     return {
       title: "Пробный период активен",
-      subtitle: `${daysLabel} · до ${formatDateRu(state.premiumUntil)}`,
+      subtitle: `Действует до ${formatDateRu(state.premiumUntil)}`,
     };
   }
 

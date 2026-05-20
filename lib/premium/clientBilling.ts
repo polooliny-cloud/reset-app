@@ -1,3 +1,4 @@
+import type { PremiumState } from "@/lib/billing/types";
 import type { LavaCheckoutPlan } from "@/lib/billing/lava/types";
 import { supabase } from "@/lib/supabase";
 
@@ -8,7 +9,9 @@ export async function getBillingAccessToken(): Promise<string | null> {
   return session?.access_token ?? null;
 }
 
-export async function startFreeTrialClient(): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function startFreeTrialClient(): Promise<
+  { ok: true; state: PremiumState; premiumUntil: string } | { ok: false; error: string; code?: string }
+> {
   const token = await getBillingAccessToken();
   if (!token) return { ok: false, error: "Нужна авторизация" };
 
@@ -17,11 +20,30 @@ export async function startFreeTrialClient(): Promise<{ ok: true } | { ok: false
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  const data = (await res.json()) as { error?: string };
+  const data = (await res.json()) as {
+    error?: string;
+    code?: string;
+    state?: PremiumState;
+    premiumUntil?: string;
+  };
+
   if (!res.ok) {
-    return { ok: false, error: data.error ?? "Не удалось активировать пробный период" };
+    return {
+      ok: false,
+      error: data.error ?? "Не удалось активировать пробный период",
+      code: data.code,
+    };
   }
-  return { ok: true };
+
+  if (!data.state) {
+    return { ok: false, error: "Некорректный ответ сервера (нет state)" };
+  }
+
+  return {
+    ok: true,
+    state: data.state,
+    premiumUntil: data.premiumUntil ?? data.state.premiumUntil ?? "",
+  };
 }
 
 export async function startCheckoutClient(
