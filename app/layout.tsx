@@ -6,6 +6,8 @@ import { AuthProvider } from "./components/AuthProvider";
 import { DevTools } from "./components/DevTools";
 import { OnboardingGate } from "./components/OnboardingGate";
 import { PostHogProvider } from "./components/PostHogProvider";
+import { PremiumGatedApp } from "./components/PremiumGatedApp";
+import { PremiumProvider } from "./components/PremiumProvider";
 import { ProfileProvider } from "./components/ProfileProvider";
 import { ProfileProgressProvider } from "./components/ProfileProgressProvider";
 import { DeployVersionGuard } from "./components/DeployVersionGuard";
@@ -59,10 +61,14 @@ export default function RootLayout({
             <AnalyticsAppMount />
             <SessionGate>
               <ProfileProvider>
-                <ProfileProgressProvider>
-                  <OnboardingGate>{children}</OnboardingGate>
-                  <DevTools />
-                </ProfileProgressProvider>
+                <PremiumProvider>
+                  <ProfileProgressProvider>
+                    <OnboardingGate>
+                      <PremiumGatedApp>{children}</PremiumGatedApp>
+                    </OnboardingGate>
+                    <DevTools />
+                  </ProfileProgressProvider>
+                </PremiumProvider>
               </ProfileProvider>
             </SessionGate>
           </AuthProvider>

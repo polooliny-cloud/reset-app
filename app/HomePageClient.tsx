@@ -459,7 +459,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mx-auto mt-2 flex w-full max-w-md flex-1 flex-col pt-3">
+        <div className="mx-auto mt-8 flex w-full max-w-md flex-1 flex-col pt-6">
           <div className="surface-card flex min-h-[9.5rem] flex-col items-center justify-center px-6 py-7">
             <StreakClock onDaysChange={setDaysCount} />
           </div>

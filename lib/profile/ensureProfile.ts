@@ -43,7 +43,6 @@ export async function ensureProfileForUser(
       id: user.id,
       email: user.email ?? null,
       onboarding_completed: false,
-      trial_started_at: new Date().toISOString(),
       xp: 0,
       level: 1,
       victories: 0,
