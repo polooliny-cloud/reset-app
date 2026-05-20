@@ -10,6 +10,7 @@ import {
   setOnboardingPendingAuthSession,
 } from '@/lib/onboarding';
 import { useAuth } from '@/lib/auth/useAuth';
+import { startFreeTrialClient } from '@/lib/premium/clientBilling';
 import { captureEvent } from '@/lib/posthogCapture';
 
 import {
@@ -266,6 +267,7 @@ export default function OnboardingPage() {
   const [authStandalone, setAuthStandalone] = useState(
     () => hasOnboardingPendingAuthSession(),
   );
+  const [trialStarting, setTrialStarting] = useState(false);
 
   useEffect(() => {
     if (!session?.user) {
@@ -487,10 +489,21 @@ export default function OnboardingPage() {
     setStage('installInstruction');
   }
 
-  async function handleOpenApp() {
-    if (onboardingCompleteSent.current) return;
+  async function handleStartFreeTrialAndOpen() {
+    if (onboardingCompleteSent.current || trialStarting) return;
+    setTrialStarting(true);
     captureEvent('install_flow_completed', { platform });
+
+    if (session?.user) {
+      try {
+        await startFreeTrialClient();
+      } catch {
+        // trial may already be used — still open the app
+      }
+    }
+
     await completeOnboarding();
+    setTrialStarting(false);
     router.replace('/');
   }
 
@@ -921,9 +934,18 @@ export default function OnboardingPage() {
                 )}
               </ol>
               <div className="mt-auto pt-6">
-                <button type="button" onClick={handleOpenApp} className="primary-cta">
-                  Открыть приложение
+                <button
+                  type="button"
+                  onClick={() => void handleStartFreeTrialAndOpen()}
+                  disabled={trialStarting}
+                  className="primary-cta"
+                >
+                  {trialStarting ? 'Открываем приложение…' : 'Начать 3 дня бесплатно'}
                 </button>
+                <p className="text-measure mt-3 text-center text-xs leading-relaxed text-[#9A9AA0]">
+                  Пробный период активируется сразу. Списание не произойдёт автоматически — вы
+                  попадёте в приложение и сможете пользоваться Reset+.
+                </p>
               </div>
             </div>
           </>

@@ -1,51 +1,134 @@
 import { activatePaidSubscription } from "@/lib/billing/activateSubscription";
-import type { LavaWebhookPayload } from "@/lib/billing/lava/types";
+import { billingLog } from "@/lib/billing/log";
+import { markPaymentFailedByInvoice } from "@/lib/billing/markPaymentFailed";
+import { parseLavaCustomFields } from "@/lib/billing/lava/parseCustomFields";
+import type { LavaCheckoutPlan, LavaWebhookPayload } from "@/lib/billing/lava/types";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+export type HandleLavaWebhookResult = {
+  ok: boolean;
+  error?: string;
+  duplicate?: boolean;
+  ignored?: boolean;
+  userId?: string;
+  plan?: LavaCheckoutPlan;
+  invoiceId?: string;
+};
+
+function isPaidStatus(status: string): boolean {
+  const s = status.toLowerCase();
+  return s === "success" || s.includes("paid");
+}
+
+function isFailureStatus(status: string): boolean {
+  const s = status.toLowerCase();
+  return (
+    s === "expired" ||
+    s === "failed" ||
+    s === "fail" ||
+    s.includes("cancel") ||
+    s === "error"
+  );
+}
 
 export async function handleLavaWebhook(
   payload: LavaWebhookPayload,
-): Promise<{ ok: boolean; error?: string }> {
-  const admin = createAdminClient();
-
+): Promise<HandleLavaWebhookResult> {
   const status = (payload.status ?? payload.event ?? "").toLowerCase();
-  const isPaid = status.includes("paid") || status.includes("success");
+  const invoiceId = payload.invoice_id ? String(payload.invoice_id) : undefined;
+  const orderId = payload.order_id ? String(payload.order_id) : undefined;
 
-  if (!isPaid) {
-    console.log("[billing] webhook ignored (non-paid status)", status);
-    return { ok: true };
+  if (!isPaidStatus(status)) {
+    if (isFailureStatus(status) && invoiceId) {
+      const admin = createAdminClient();
+      await markPaymentFailedByInvoice(admin, invoiceId, {
+        ...(payload as Record<string, unknown>),
+        webhook_status: status,
+      });
+      billingLog("webhook_payment_failed", { invoiceId, orderId, status });
+    } else {
+      billingLog("webhook_ignored", { status, invoiceId, orderId });
+    }
+    return { ok: true, ignored: true, invoiceId };
   }
 
-  const userId =
-    payload.custom_fields?.user_id ??
-    (payload.metadata?.user_id as string | undefined) ??
-    payload.order_id;
+  const customRaw = payload.custom_fields ?? payload.customFields ?? null;
+  const custom = parseLavaCustomFields(customRaw);
 
-  const invoiceId = payload.invoice_id ?? payload.order_id;
-  const plan = (payload.custom_fields?.plan ??
-    payload.metadata?.plan ??
-    "monthly") as "monthly" | "yearly" | "lifetime";
+  const admin = createAdminClient();
+
+  let userId = custom.user_id;
+  let plan = custom.plan;
+
+  if (!userId && invoiceId) {
+    const { data: payment } = await admin
+      .from("payments")
+      .select("user_id, metadata")
+      .eq("provider", "lava")
+      .eq("provider_invoice_id", invoiceId)
+      .maybeSingle();
+
+    if (payment) {
+      userId = payment.user_id;
+      const meta = payment.metadata as { plan?: LavaCheckoutPlan } | null;
+      plan = plan ?? meta?.plan;
+    }
+  }
 
   if (!userId || !invoiceId) {
-    console.error("[billing] webhook missing userId or invoiceId", payload);
+    billingLog(
+      "webhook_invalid_payload",
+      { invoiceId, orderId, customRaw },
+      "error",
+    );
     return { ok: false, error: "Invalid webhook payload" };
   }
 
-  const amount = Number(payload.amount ?? 0);
-  const currency = String(payload.currency ?? "RUB");
+  const resolvedPlan: LavaCheckoutPlan = plan ?? "monthly";
+  const amountRub = Number(payload.amount ?? 0);
+  const amountKopecks = Number.isFinite(amountRub) ? Math.round(amountRub * 100) : 0;
+
+  billingLog("webhook_activation_start", {
+    userId,
+    invoiceId,
+    orderId,
+    plan: resolvedPlan,
+    status,
+    amountKopecks,
+  });
 
   const result = await activatePaidSubscription(admin, {
     userId,
-    plan,
-    providerInvoiceId: String(invoiceId),
-    amount: Number.isFinite(amount) ? Math.floor(amount) : 0,
-    currency,
-    metadata: payload as Record<string, unknown>,
+    plan: resolvedPlan,
+    providerInvoiceId: invoiceId,
+    amount: amountKopecks,
+    currency: "RUB",
+    metadata: {
+      ...(payload as Record<string, unknown>),
+      order_id: orderId,
+      plan: resolvedPlan,
+    },
   });
 
   if (!result.ok) {
-    return result;
+    billingLog(
+      "webhook_activation_failed",
+      { userId, invoiceId, plan: resolvedPlan, error: result.error },
+      "error",
+    );
+    return { ok: false, error: result.error, userId, plan: resolvedPlan, invoiceId };
   }
 
-  console.log("[billing] lava webhook processed", { userId, invoiceId, plan });
-  return { ok: true };
+  if (result.duplicate) {
+    billingLog("webhook_duplicate_ignored", { userId, invoiceId, plan: resolvedPlan });
+    return { ok: true, duplicate: true, userId, plan: resolvedPlan, invoiceId };
+  }
+
+  billingLog("webhook_activation_success", {
+    userId,
+    invoiceId,
+    plan: resolvedPlan,
+  });
+
+  return { ok: true, userId, plan: resolvedPlan, invoiceId };
 }

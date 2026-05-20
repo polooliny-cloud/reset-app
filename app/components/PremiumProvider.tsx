@@ -121,6 +121,22 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   }, [userId, refetch]);
 
   useEffect(() => {
+    if (!userId || typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const billing = params.get("billing");
+    if (billing !== "success" && billing !== "cancelled") return;
+
+    console.log("[billing] checkout return, refetch premium", billing);
+    void refetch().finally(() => {
+      params.delete("billing");
+      const qs = params.toString();
+      const next = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
+      window.history.replaceState({}, "", next);
+    });
+  }, [userId, refetch]);
+
+  useEffect(() => {
     if (!userId) return;
 
     const channel = supabase

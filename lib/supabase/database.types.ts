@@ -7,7 +7,7 @@ export type VictoryTriggerDb =
 
 export type SubscriptionStatusDb = "active" | "expired" | "cancelled" | "trialing";
 
-export type SubscriptionPlanDb = "monthly" | "yearly" | "lifetime" | "free_trial";
+export type SubscriptionPlanDb = "monthly" | "yearly" | "free_trial";
 
 export type PaymentStatusDb = "pending" | "paid" | "failed";
 

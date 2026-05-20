@@ -5,7 +5,11 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { InstallFlowModal } from './components/InstallFlowModal';
+import { PremiumSoftLock } from './components/premium/PremiumSoftLock';
+import { PremiumStatusButton } from './components/premium/PremiumStatusButton';
 import { XpLevelBlock } from './components/XpLevelBlock';
+
+import { usePremium } from '@/app/components/PremiumProvider';
 
 import { incrementMetric, trackEvent } from '@/lib/analytics';
 import {
@@ -97,6 +101,7 @@ function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void })
 
 export default function Home() {
   const pathname = usePathname();
+  const { isPremium } = usePremium();
   const { xp, victories, awardVictory, resetProgress } = useProfileProgress();
   const wins = victories;
   const [screen, setScreen] = useState<HomeScreen>('home');
@@ -105,7 +110,7 @@ export default function Home() {
   const [claimedMissionCount, setClaimedMissionCount] = useState(0);
   const [daysCount, setDaysCount] = useState<number | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [missionModal, setMissionModal] = useState<'claim' | 'locked' | null>(null);
+  const [missionModal, setMissionModal] = useState<'claim' | 'locked' | 'premium' | null>(null);
   const [showInstallFlow, setShowInstallFlow] = useState(false);
   const [deadlineDaysInput, setDeadlineDaysInput] = useState('');
   const [deadlineHoursInput, setDeadlineHoursInput] = useState('');
@@ -247,6 +252,10 @@ export default function Home() {
   }, [claimedMissionCount, missionStatus.claimedCount]);
 
   function handleOpenRewardModal() {
+    if (!isPremium) {
+      setMissionModal('premium');
+      return;
+    }
     if (missionStatus.pendingRewards > 0) {
       setMissionModal('claim');
       return;
@@ -321,23 +330,28 @@ export default function Home() {
               </svg>
             </button>
 
-            <div className="surface-card mx-auto flex w-full max-w-md flex-col p-6">
-              <h1 className="text-flow-heading text-center text-lg font-medium text-[#9A9AA0]">
-                Количество ваших побед
-              </h1>
-              <p className="mt-3 text-center text-5xl font-bold tabular-nums text-white sm:text-6xl">
-                {wins} <span aria-hidden>🔥</span>
-              </p>
-              <XpLevelBlock xp={xp} variant="stats" />
-              <div className="mt-7 border-t border-white/10 pt-5">
-                <p className="text-flow text-center text-sm font-normal text-[#9A9AA0]">
-                  Всего опыта
+            <PremiumSoftLock
+              title="История прогресса в Reset+"
+              description="Победы, XP и уровни доступны с активным trial или подпиской."
+            >
+              <div className="surface-card mx-auto flex w-full max-w-md flex-col p-6">
+                <h1 className="text-flow-heading text-center text-lg font-medium text-[#9A9AA0]">
+                  Количество ваших побед
+                </h1>
+                <p className="mt-3 text-center text-5xl font-bold tabular-nums text-white sm:text-6xl">
+                  {wins} <span aria-hidden>🔥</span>
                 </p>
-                <p className="mt-2 text-center text-2xl font-semibold text-white">
-                  {xp} xp
-                </p>
+                <XpLevelBlock xp={xp} variant="stats" />
+                <div className="mt-7 border-t border-white/10 pt-5">
+                  <p className="text-flow text-center text-sm font-normal text-[#9A9AA0]">
+                    Всего опыта
+                  </p>
+                  <p className="mt-2 text-center text-2xl font-semibold text-white">
+                    {xp} xp
+                  </p>
+                </div>
               </div>
-            </div>
+            </PremiumSoftLock>
           </div>
         </main>
       ) : screen === 'deadline' ? (
@@ -447,7 +461,7 @@ export default function Home() {
       <main className="app-shell flex min-h-screen flex-col px-4 pb-6 pt-5 sm:px-6">
         <div className="relative z-10 flex min-h-0 flex-1 flex-col pt-8">
         <div
-          className="absolute left-0 right-0 z-40"
+          className="absolute left-0 right-0 z-40 flex items-center justify-between gap-3"
           style={{
             top: topInset,
             paddingLeft: leftInset,
@@ -457,6 +471,7 @@ export default function Home() {
           <p className="text-left text-[1.1375rem] font-normal uppercase leading-none tracking-[0.18em] text-white/75">
             Reset
           </p>
+          <PremiumStatusButton />
         </div>
 
         <div className="mx-auto mt-8 flex w-full max-w-md flex-1 flex-col pt-6">
@@ -464,6 +479,10 @@ export default function Home() {
             <StreakClock onDaysChange={setDaysCount} />
           </div>
 
+          <PremiumSoftLock
+            title="Premium-задания"
+            description="Награды за миссии доступны в Reset+."
+          >
           <div className="surface-card mt-4 p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -513,6 +532,7 @@ export default function Home() {
               </span>
             </div>
           </div>
+          </PremiumSoftLock>
 
           <div className="min-h-6 flex-1" aria-hidden />
 
@@ -615,17 +635,23 @@ export default function Home() {
           <div className="min-h-6 flex-1" aria-hidden />
 
           <div className="w-full shrink-0 pb-[calc(20px+env(safe-area-inset-bottom))]">
-            <Link
-              href="/sos"
-              onClick={() => {
-                trackEvent('sos_click');
-                incrementMetric('sos_click');
-                captureEvent('sos_click');
-              }}
-              className="block w-full rounded-3xl border border-violet-300/30 bg-slate-900/80 px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_14px_30px_rgba(2,6,23,0.38)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+            <PremiumSoftLock
+              layout="compact"
+              title=""
+              description="Таймер и сценарии восстановления доступны в Reset+."
             >
-              Тревожная кнопка
-            </Link>
+              <Link
+                href="/sos"
+                onClick={() => {
+                  trackEvent('sos_click');
+                  incrementMetric('sos_click');
+                  captureEvent('sos_click');
+                }}
+                className="block w-full rounded-3xl border border-violet-300/30 bg-slate-900/80 px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_14px_30px_rgba(2,6,23,0.38)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+              >
+                Тревожная кнопка
+              </Link>
+            </PremiumSoftLock>
           </div>
         </div>
         </div>
@@ -689,6 +715,34 @@ export default function Home() {
               className="primary-cta mt-6"
             >
               Забрать 54xp
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {missionModal === 'premium' ? (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center bg-[#070a12]/72 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mission-premium-title"
+        >
+          <div className="surface-card w-full max-w-sm p-6">
+            <p id="mission-premium-title" className="text-flow text-center text-base font-medium text-white">
+              Награда в Reset+
+            </p>
+            <p className="text-flow mt-3 text-center text-sm text-[#D4D4D8]">
+              Активируйте trial или оформите подписку, чтобы забирать награды за задания.
+            </p>
+            <Link href="/subscription" className="primary-cta mt-6 block text-center">
+              Открыть Reset+
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMissionModal(null)}
+              className="selection-card mt-3 w-full py-3 text-base font-semibold text-white"
+            >
+              Закрыть
             </button>
           </div>
         </div>

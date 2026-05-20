@@ -3,35 +3,49 @@
 import { useState } from "react";
 
 import { usePremium } from "@/app/components/PremiumProvider";
+import { PLAN_AMOUNTS_RUB } from "@/lib/billing/lava/createCheckout";
+import type { LavaCheckoutPlan } from "@/lib/billing/lava/types";
 import { supabase } from "@/lib/supabase";
 
 type Props = {
   onTrialStarted?: () => void;
 };
 
+function formatRubPrice(amount: number): string {
+  return `${amount.toLocaleString("ru-RU")} ₽`;
+}
+
+const PLANS: { id: LavaCheckoutPlan; label: string; price: string }[] = [
+  { id: "monthly", label: "Месяц", price: formatRubPrice(PLAN_AMOUNTS_RUB.monthly) },
+  { id: "yearly", label: "Год", price: formatRubPrice(PLAN_AMOUNTS_RUB.yearly) },
+];
+
 export function PaywallScreen({ onTrialStarted }: Props) {
   const { canStartTrial, refetch, loading } = usePremium();
   const [busy, setBusy] = useState(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<LavaCheckoutPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function getAccessToken(): Promise<string | null> {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  }
 
   async function handleStartTrial() {
     setBusy(true);
     setError(null);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
+      const token = await getAccessToken();
+      if (!token) {
         setError("Нужна авторизация");
         return;
       }
 
       const res = await fetch("/api/billing/trial/start", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = (await res.json()) as { error?: string; ok?: boolean };
@@ -47,6 +61,43 @@ export function PaywallScreen({ onTrialStarted }: Props) {
       setError(e instanceof Error ? e.message : "Ошибка сети");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleCheckout(plan: LavaCheckoutPlan) {
+    setCheckoutPlan(plan);
+    setError(null);
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        setError("Нужна авторизация");
+        return;
+      }
+
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ plan }),
+      });
+
+      const data = (await res.json()) as {
+        error?: string;
+        checkout_url?: string;
+      };
+
+      if (!res.ok || !data.checkout_url) {
+        setError(data.error ?? "Не удалось создать оплату");
+        return;
+      }
+
+      window.location.href = data.checkout_url;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Ошибка сети");
+    } finally {
+      setCheckoutPlan(null);
     }
   }
 
@@ -75,14 +126,27 @@ export function PaywallScreen({ onTrialStarted }: Props) {
               disabled={busy || loading}
               className="primary-cta"
             >
-              {busy ? "Активация…" : "Попробовать 3 дня бесплатно"}
+              {busy && !checkoutPlan ? "Активация…" : "Попробовать 3 дня бесплатно"}
             </button>
           ) : null}
+
+          {PLANS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => void handleCheckout(p.id)}
+              disabled={busy || loading || checkoutPlan !== null}
+              className="selection-card w-full px-4 py-3 text-sm font-semibold text-white"
+            >
+              {checkoutPlan === p.id ? "Переход к оплате…" : `${p.label} — ${p.price}`}
+            </button>
+          ))}
+
           <p className="text-xs text-[#8C8C92]">
-            Оплата через Lava. Статус обновляется автоматически после webhook.
+            Оплата через Lava. Статус обновляется автоматически после оплаты.
           </p>
         </div>
-        </div>
+      </div>
     </main>
   );
 }

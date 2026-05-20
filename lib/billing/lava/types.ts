@@ -1,13 +1,18 @@
-/** Minimal Lava webhook payload shape (extend when integrating full API docs). */
+/** Lava webhook payload (Business API). */
 export type LavaWebhookPayload = {
-  event?: string;
-  status?: string;
   invoice_id?: string;
   order_id?: string;
+  status?: string;
+  pay_time?: string;
   amount?: number;
+  custom_fields?: string | null;
+  credited?: number;
+  pay_service?: string;
+  payer_details?: string;
+  event?: string;
   currency?: string;
-  custom_fields?: Record<string, string>;
+  customFields?: string | null;
   metadata?: Record<string, unknown>;
 };
 
-export type LavaCheckoutPlan = "monthly" | "yearly" | "lifetime";
+export type LavaCheckoutPlan = "monthly" | "yearly";

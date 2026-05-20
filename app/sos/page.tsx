@@ -4,6 +4,7 @@ import { IBM_Plex_Sans } from 'next/font/google';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+import { PremiumSoftLock } from '@/app/components/premium/PremiumSoftLock';
 import { LAST_TIMER_MESSAGE_NOTE, TIMER_TEXTS } from '@/lib/sos/timerTexts';
 import { captureFirstVictoryIfNeeded } from '@/lib/posthogCapture';
 import { useProfileProgress } from '@/lib/profile/useProfileProgress';
@@ -144,6 +145,10 @@ export default function SosPage() {
         </svg>
       </button>
 
+      <PremiumSoftLock
+        title="SOS recovery tools"
+        description="Таймер и сценарии восстановления доступны в Reset+."
+      >
       {screen === 'trigger' ? (
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col px-2 pb-28 pt-[calc(64px+env(safe-area-inset-top))]">
           <h1 className="text-flow-heading text-2xl font-semibold text-white">
@@ -261,6 +266,7 @@ export default function SosPage() {
           </div>
         </div>
       ) : null}
+      </PremiumSoftLock>
       </div>
     </main>
   );

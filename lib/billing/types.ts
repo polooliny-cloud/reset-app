@@ -1,6 +1,6 @@
 export type SubscriptionStatus = "active" | "expired" | "cancelled" | "trialing";
 
-export type SubscriptionPlan = "monthly" | "yearly" | "lifetime" | "free_trial";
+export type SubscriptionPlan = "monthly" | "yearly" | "free_trial";
 
 export type PaymentStatus = "pending" | "paid" | "failed";
 
@@ -35,7 +35,7 @@ export type SubscriptionRow = {
 
 export const FREE_TRIAL_DAYS = 3;
 
-export const PLAN_DURATION_DAYS: Record<Exclude<SubscriptionPlan, "lifetime" | "free_trial">, number> = {
+export const PLAN_DURATION_DAYS: Record<Exclude<SubscriptionPlan, "free_trial">, number> = {
   monthly: 30,
   yearly: 365,
 };

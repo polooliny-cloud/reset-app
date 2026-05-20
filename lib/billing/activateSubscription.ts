@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { billingLog } from "@/lib/billing/log";
 import type { SubscriptionPlan } from "@/lib/billing/types";
 import { PLAN_DURATION_DAYS } from "@/lib/billing/types";
 import type { Database } from "@/lib/supabase/database.types";
@@ -9,10 +10,9 @@ function addDaysIso(from: Date, days: number): string {
 }
 
 export function resolvePremiumUntil(plan: SubscriptionPlan, from = new Date()): string | null {
-  if (plan === "lifetime") return null;
   if (plan === "free_trial") return addDaysIso(from, 3);
-  const days = PLAN_DURATION_DAYS[plan as keyof typeof PLAN_DURATION_DAYS];
-  return days ? addDaysIso(from, days) : addDaysIso(from, 30);
+  const days = PLAN_DURATION_DAYS[plan];
+  return addDaysIso(from, days);
 }
 
 export async function activatePaidSubscription(
@@ -25,21 +25,26 @@ export async function activatePaidSubscription(
     currency: string;
     metadata?: Record<string, unknown>;
   },
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const now = new Date();
-  const nowIso = now.toISOString();
-  const expiresAt = resolvePremiumUntil(input.plan, now);
-  const premiumUntil =
-    input.plan === "lifetime"
-      ? addDaysIso(now, 36500)
-      : (expiresAt ?? addDaysIso(now, 30));
-
+): Promise<{ ok: true; duplicate?: boolean } | { ok: false; error: string }> {
   const { data: existingPayment } = await admin
     .from("payments")
-    .select("id")
+    .select("id, status")
     .eq("provider", "lava")
     .eq("provider_invoice_id", input.providerInvoiceId)
     .maybeSingle();
+
+  if (existingPayment?.status === "paid") {
+    billingLog("payment_duplicate", {
+      userId: input.userId,
+      providerInvoiceId: input.providerInvoiceId,
+    });
+    return { ok: true, duplicate: true };
+  }
+
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const premiumUntil = resolvePremiumUntil(input.plan, now) ?? addDaysIso(now, 30);
+  const expiresAt = premiumUntil;
 
   const paymentPayload = {
     user_id: input.userId,
@@ -56,9 +61,15 @@ export async function activatePaidSubscription(
     : await admin.from("payments").insert(paymentPayload);
 
   if (paymentError) {
-    console.error("[billing] payment upsert failed", paymentError.message);
+    billingLog("payment_upsert_failed", { error: paymentError.message }, "error");
     return { ok: false, error: paymentError.message };
   }
+
+  billingLog("payment_upsert_ok", {
+    userId: input.userId,
+    providerInvoiceId: input.providerInvoiceId,
+    status: "paid",
+  });
 
   const { error: subError } = await admin.from("subscriptions").insert({
     user_id: input.userId,
@@ -71,9 +82,15 @@ export async function activatePaidSubscription(
   });
 
   if (subError) {
-    console.error("[billing] subscription insert failed", subError.message);
+    billingLog("subscription_insert_failed", { error: subError.message }, "error");
     return { ok: false, error: subError.message };
   }
+
+  billingLog("subscription_insert_ok", {
+    userId: input.userId,
+    plan: input.plan,
+    expiresAt,
+  });
 
   const { error: profileError } = await admin
     .from("profiles")
@@ -84,17 +101,16 @@ export async function activatePaidSubscription(
     .eq("id", input.userId);
 
   if (profileError) {
-    console.error("[billing] profile premium update failed", profileError.message);
+    billingLog("profile_premium_update_failed", { error: profileError.message }, "error");
     return { ok: false, error: profileError.message };
   }
 
-  console.log("[billing] subscription activated", {
+  billingLog("premium_activated", {
     userId: input.userId,
     plan: input.plan,
     premiumUntil,
-    expiresAt,
+    providerInvoiceId: input.providerInvoiceId,
   });
-  console.log("[premium] access granted", input.userId);
 
   return { ok: true };
 }

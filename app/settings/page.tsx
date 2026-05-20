@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { PremiumBadge } from "@/app/components/premium/PremiumBadge";
 import { useAuth } from "@/lib/auth/useAuth";
 import { clearOtpCooldownStorage } from "@/lib/auth/otpCooldownStorage";
 import { clearOnboardingResumeAfterMagicLink } from "@/app/onboarding/OnboardingOtpPanel";
@@ -53,14 +54,24 @@ export default function SettingsPage() {
         </Link>
 
         <div className="mx-auto mt-10 flex w-full max-w-md flex-1 flex-col pt-8">
-          <h1 className="text-flow-heading text-center text-2xl font-semibold text-white">
-            Настройки
-          </h1>
+          <div className="flex flex-col items-center gap-2">
+            <h1 className="text-flow-heading text-center text-2xl font-semibold text-white">
+              Настройки
+            </h1>
+            <PremiumBadge />
+          </div>
           {user?.email ? (
             <p className="text-flow mt-3 text-center text-sm text-[#9A9AA0]">{user.email}</p>
           ) : null}
 
-          <div className="surface-card mt-8 p-6">
+          <Link
+            href="/subscription"
+            className="selection-card mt-6 block w-full px-5 py-4 text-center text-sm font-semibold text-white transition duration-200 ease-out hover:bg-slate-800/70"
+          >
+            Reset+ · подписка и статус
+          </Link>
+
+          <div className="surface-card mt-4 p-6">
             <button
               type="button"
               onClick={() => void handleSignOut()}
