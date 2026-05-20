@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { trialLog } from "@/lib/billing/trialLog";
 import { FREE_TRIAL_DAYS } from "@/lib/billing/types";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -25,7 +26,7 @@ export async function startFreeTrial(
     .maybeSingle();
 
   if (profileError) {
-    console.error("[trial] profile fetch failed", profileError.message);
+    trialLog("failed", { userId, step: "profile_fetch", error: profileError.message }, "error");
     return { ok: false, error: profileError.message };
   }
 
@@ -34,7 +35,7 @@ export async function startFreeTrial(
   }
 
   if (profile.trial_started_at) {
-    console.log("[trial] duplicate prevented", userId);
+    trialLog("failed", { userId, code: "trial_already_used" }, "warn");
     return { ok: false, error: "Trial already used", code: "trial_already_used" };
   }
 
@@ -53,13 +54,13 @@ export async function startFreeTrial(
     .eq("id", userId);
 
   if (profileUpdateError) {
-    console.error("[trial] profile update failed", profileUpdateError.message);
+    trialLog("failed", { userId, step: "profile_update", error: profileUpdateError.message }, "error");
     return { ok: false, error: profileUpdateError.message };
   }
 
   const { error: subError } = await admin.from("subscriptions").insert({
     user_id: userId,
-    provider: "lava",
+    provider: "internal",
     plan: "free_trial",
     status: "trialing",
     started_at: startedAt,
@@ -68,12 +69,11 @@ export async function startFreeTrial(
   });
 
   if (subError) {
-    console.error("[trial] subscription insert failed", subError.message);
+    trialLog("failed", { userId, step: "subscription_insert", error: subError.message }, "error");
     return { ok: false, error: subError.message };
   }
 
-  console.log("[trial] started", userId, { premiumUntil, expiresAt });
-  console.log("[billing] trial subscription created", userId);
+  trialLog("premium_activated", { userId, premiumUntil, expiresAt });
 
   return { ok: true, premiumUntil };
 }

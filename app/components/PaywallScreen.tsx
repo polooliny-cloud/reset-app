@@ -3,9 +3,12 @@
 import { useState } from "react";
 
 import { usePremium } from "@/app/components/PremiumProvider";
-import { PLAN_AMOUNTS_RUB } from "@/lib/billing/lava/createCheckout";
+import { PLAN_AMOUNTS_RUB } from "@/lib/billing/planPrices";
 import type { LavaCheckoutPlan } from "@/lib/billing/lava/types";
-import { supabase } from "@/lib/supabase";
+import { isCheckoutRedirectDebugEnabled } from "@/lib/billing/lava/isCheckoutDebug";
+import { startFreeTrialClient } from "@/lib/premium/startFreeTrialClient";
+import { startCheckoutClient } from "@/lib/premium/startCheckoutClient";
+import { CheckoutRedirectDebug } from "@/app/components/CheckoutRedirectDebug";
 
 type Props = {
   onTrialStarted?: () => void;
@@ -25,36 +28,22 @@ export function PaywallScreen({ onTrialStarted }: Props) {
   const [busy, setBusy] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<LavaCheckoutPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  async function getAccessToken(): Promise<string | null> {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return session?.access_token ?? null;
-  }
+  const [pendingCheckout, setPendingCheckout] = useState<{
+    checkoutUrl: string;
+    invoiceId?: string;
+    orderId?: string;
+    resolvedFrom?: string;
+  } | null>(null);
 
   async function handleStartTrial() {
     setBusy(true);
     setError(null);
     try {
-      const token = await getAccessToken();
-      if (!token) {
-        setError("Нужна авторизация");
+      const result = await startFreeTrialClient();
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
-
-      const res = await fetch("/api/billing/trial/start", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = (await res.json()) as { error?: string; ok?: boolean };
-
-      if (!res.ok) {
-        setError(data.error ?? "Не удалось активировать пробный период");
-        return;
-      }
-
       await refetch();
       onTrialStarted?.();
     } catch (e) {
@@ -67,33 +56,23 @@ export function PaywallScreen({ onTrialStarted }: Props) {
   async function handleCheckout(plan: LavaCheckoutPlan) {
     setCheckoutPlan(plan);
     setError(null);
+    setPendingCheckout(null);
     try {
-      const token = await getAccessToken();
-      if (!token) {
-        setError("Нужна авторизация");
+      const result = await startCheckoutClient(plan);
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
-
-      const res = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ plan }),
-      });
-
-      const data = (await res.json()) as {
-        error?: string;
-        checkout_url?: string;
-      };
-
-      if (!res.ok || !data.checkout_url) {
-        setError(data.error ?? "Не удалось создать оплату");
+      if (isCheckoutRedirectDebugEnabled()) {
+        setPendingCheckout({
+          checkoutUrl: result.checkoutUrl,
+          invoiceId: result.invoiceId,
+          orderId: result.orderId,
+          resolvedFrom: result.resolvedFrom,
+        });
         return;
       }
-
-      window.location.href = data.checkout_url;
+      window.location.href = result.checkoutUrl;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка сети");
     } finally {
@@ -103,6 +82,18 @@ export function PaywallScreen({ onTrialStarted }: Props) {
 
   return (
     <main className="app-shell flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:px-6">
+      {pendingCheckout ? (
+        <CheckoutRedirectDebug
+          checkoutUrl={pendingCheckout.checkoutUrl}
+          invoiceId={pendingCheckout.invoiceId}
+          orderId={pendingCheckout.orderId}
+          resolvedFrom={pendingCheckout.resolvedFrom}
+          onContinue={() => {
+            window.location.href = pendingCheckout.checkoutUrl;
+          }}
+          onCancel={() => setPendingCheckout(null)}
+        />
+      ) : null}
       <div className="surface-card w-full max-w-md px-6 py-8 text-center">
         <p className="text-sm uppercase tracking-[0.18em] text-white/70">Reset Premium</p>
         <h1 className="text-title mt-4 text-2xl font-semibold text-white">

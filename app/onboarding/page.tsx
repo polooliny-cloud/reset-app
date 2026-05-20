@@ -12,7 +12,7 @@ import {
 } from '@/lib/onboarding';
 import { useAuth } from '@/lib/auth/useAuth';
 import { ensureProfileForUser } from '@/lib/profile/ensureProfile';
-import { startFreeTrialClient } from '@/lib/premium/clientBilling';
+import { startFreeTrialClient } from '@/lib/premium/startFreeTrialClient';
 import { markTrialActivationPending } from '@/lib/premium/trialActivationPending';
 import { captureEvent } from '@/lib/posthogCapture';
 import { supabase } from '@/lib/supabase';

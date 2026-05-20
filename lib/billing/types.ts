@@ -4,7 +4,7 @@ export type SubscriptionPlan = "monthly" | "yearly" | "free_trial";
 
 export type PaymentStatus = "pending" | "paid" | "failed";
 
-export type BillingProvider = "lava";
+export type BillingProvider = "lava" | "internal";
 
 export type PremiumState = {
   isPremium: boolean;

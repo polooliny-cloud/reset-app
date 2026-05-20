@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { CheckoutRedirectDebug } from "@/app/components/CheckoutRedirectDebug";
 import { usePremium } from "@/app/components/PremiumProvider";
-import { startCheckoutClient, startFreeTrialClient } from "@/lib/premium/clientBilling";
-import { PLAN_AMOUNTS_RUB } from "@/lib/billing/lava/createCheckout";
+import { isCheckoutRedirectDebugEnabled } from "@/lib/billing/lava/isCheckoutDebug";
+import { PLAN_AMOUNTS_RUB } from "@/lib/billing/planPrices";
+import { startCheckoutClient } from "@/lib/premium/startCheckoutClient";
+import { startFreeTrialClient } from "@/lib/premium/startFreeTrialClient";
 import type { LavaCheckoutPlan } from "@/lib/billing/lava/types";
 import { getPremiumHeaderCopy, getPremiumStatusKind } from "@/lib/premium/presentation";
 
@@ -36,20 +39,50 @@ export default function SubscriptionPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [pendingCheckout, setPendingCheckout] = useState<{
+    checkoutUrl: string;
+    invoiceId?: string;
+    orderId?: string;
+    resolvedFrom?: string;
+    debug?: Record<string, unknown>;
+  } | null>(null);
 
   const topInset = "calc(8px + env(safe-area-inset-top))";
+
+  function redirectToCheckout(url: string) {
+    window.location.href = url;
+  }
 
   async function handleSubscribe() {
     setBusy("checkout");
     setError(null);
     setMessage(null);
+    setPendingCheckout(null);
+
     const result = await startCheckoutClient(selectedPlan);
     if (!result.ok) {
-      setError(result.error);
+      const details =
+        result.details && typeof result.details === "object"
+          ? ` (${JSON.stringify(result.details)})`
+          : "";
+      setError(`${result.error}${details}`);
       setBusy(null);
       return;
     }
-    window.location.href = result.checkoutUrl;
+
+    if (isCheckoutRedirectDebugEnabled()) {
+      setPendingCheckout({
+        checkoutUrl: result.checkoutUrl,
+        invoiceId: result.invoiceId,
+        orderId: result.orderId,
+        resolvedFrom: result.resolvedFrom,
+        debug: result.debug as Record<string, unknown> | undefined,
+      });
+      setBusy(null);
+      return;
+    }
+
+    redirectToCheckout(result.checkoutUrl);
   }
 
   async function handleStartTrial() {
@@ -76,6 +109,17 @@ export default function SubscriptionPage() {
 
   return (
     <main className="app-shell flex min-h-screen flex-col px-4 pb-10 pt-5 sm:px-6">
+      {pendingCheckout ? (
+        <CheckoutRedirectDebug
+          checkoutUrl={pendingCheckout.checkoutUrl}
+          invoiceId={pendingCheckout.invoiceId}
+          orderId={pendingCheckout.orderId}
+          resolvedFrom={pendingCheckout.resolvedFrom}
+          lavaDebug={pendingCheckout.debug}
+          onContinue={() => redirectToCheckout(pendingCheckout.checkoutUrl)}
+          onCancel={() => setPendingCheckout(null)}
+        />
+      ) : null}
       <div
         className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(244,63,94,0.12),transparent_55%)]"
         aria-hidden

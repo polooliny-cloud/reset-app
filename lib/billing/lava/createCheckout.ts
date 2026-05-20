@@ -1,15 +1,17 @@
 import { billingLog, sanitizeLavaInvoicePayload } from "@/lib/billing/log";
+import { PLAN_AMOUNTS_RUB as PLAN_AMOUNTS_RUB_BASE } from "@/lib/billing/planPrices";
 import { signLavaRequestBody } from "@/lib/billing/lava/signRequest";
+import {
+  parseLavaInvoiceCreateResponse,
+  type LavaInvoiceCreateRaw,
+} from "@/lib/billing/lava/parseInvoiceCreateResponse";
 import type { LavaCheckoutPlan } from "@/lib/billing/lava/types";
 
 const DEFAULT_LAVA_API_BASE = "https://api.lava.ru/business/";
 const LAVA_FETCH_TIMEOUT_MS = 15_000;
 
 /** Plan prices in rubles (Lava `sum` field). */
-export const PLAN_AMOUNTS_RUB: Record<LavaCheckoutPlan, number> = {
-  monthly: 299,
-  yearly: 1990,
-};
+export const PLAN_AMOUNTS_RUB: Record<LavaCheckoutPlan, number> = PLAN_AMOUNTS_RUB_BASE;
 
 export function planAmountKopecks(plan: LavaCheckoutPlan): number {
   return Math.round(PLAN_AMOUNTS_RUB[plan] * 100);
@@ -22,23 +24,18 @@ export type LavaCreateInvoiceResult =
       orderId: string;
       checkoutUrl: string;
       amountRub: number;
+      resolvedFrom: string;
+      lavaDebug: {
+        statusCheck: boolean | null;
+        apiStatus: unknown;
+        invoiceStatus: unknown;
+        httpStatus: number;
+      };
     }
-  | { ok: false; error: string };
-
-type LavaInvoiceCreateResponse = {
-  data?: {
-    id?: string;
-    url?: string;
-    amount?: number;
-  };
-  status?: number;
-  status_check?: boolean;
-  error?: string;
-  message?: string;
-};
+  | { ok: false; error: string; details?: Record<string, unknown> };
 
 /**
- * Creates a Lava invoice via Business API (`POST invoice/create`).
+ * Creates a Lava invoice via Business API (`POST https://api.lava.ru/business/invoice/create`).
  * Uses LAVA_API_KEY + LAVA_SHOP_ID (server-only).
  */
 export async function createLavaCheckoutInvoice(input: {
@@ -74,20 +71,21 @@ export async function createLavaCheckoutInvoice(input: {
     orderId: input.orderId,
     plan: input.plan,
     userId: input.userId,
+    endpoint: "invoice/create",
     payload: sanitizeLavaInvoicePayload(body),
   });
 
   const rawBody = JSON.stringify(body);
   const signature = signLavaRequestBody(rawBody, input.apiKey);
   const base = (process.env.LAVA_API_BASE_URL ?? DEFAULT_LAVA_API_BASE).replace(/\/?$/, "/");
-  const url = `${base}invoice/create`;
+  const endpointUrl = `${base}invoice/create`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), LAVA_FETCH_TIMEOUT_MS);
 
   let response: Response;
   try {
-    response = await fetch(url, {
+    response = await fetch(endpointUrl, {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -104,45 +102,76 @@ export async function createLavaCheckoutInvoice(input: {
         : e instanceof Error
           ? e.message
           : "Lava API network error";
-    billingLog("lava_invoice_network_error", { orderId: input.orderId, message }, "error");
+    billingLog("lava_invoice_network_error", { orderId: input.orderId, message, endpointUrl }, "error");
     return { ok: false, error: message };
   } finally {
     clearTimeout(timeoutId);
   }
 
-  const json = (await response.json().catch(() => ({}))) as LavaInvoiceCreateResponse;
+  const responseText = await response.text();
+  let json: LavaInvoiceCreateRaw = {};
+  try {
+    json = responseText ? (JSON.parse(responseText) as LavaInvoiceCreateRaw) : {};
+  } catch {
+    billingLog(
+      "checkout_response_raw",
+      {
+        orderId: input.orderId,
+        httpStatus: response.status,
+        parseError: true,
+        rawTextPreview: responseText.slice(0, 500),
+      },
+      "error",
+    );
+    return {
+      ok: false,
+      error: "Lava returned non-JSON response",
+      details: { httpStatus: response.status, preview: responseText.slice(0, 200) },
+    };
+  }
 
-  billingLog("lava_invoice_response", {
+  const parsed = parseLavaInvoiceCreateResponse({
     orderId: input.orderId,
     httpStatus: response.status,
-    status: json.status,
-    status_check: json.status_check,
-    invoiceId: json.data?.id ?? null,
-    hasUrl: Boolean(json.data?.url),
-    amount: json.data?.amount ?? null,
-    error: json.error ?? json.message ?? null,
+    json,
+    fallbackAmountRub: sum,
   });
 
-  if (!response.ok) {
-    const message =
-      json.error ?? json.message ?? `Lava API error (${response.status})`;
-    billingLog("lava_invoice_failed", { orderId: input.orderId, message }, "error");
-    return { ok: false, error: message };
+  if (!parsed.ok) {
+    billingLog(
+      "lava_invoice_failed",
+      { orderId: input.orderId, error: parsed.error, details: parsed.details },
+      "error",
+    );
+    return { ok: false, error: parsed.error, details: parsed.details };
   }
 
-  const invoiceId = json.data?.id;
-  const checkoutUrl = json.data?.url;
+  const { result } = parsed;
 
-  if (!invoiceId || !checkoutUrl) {
-    billingLog("lava_invoice_invalid_response", { orderId: input.orderId }, "error");
-    return { ok: false, error: "Invalid Lava invoice response" };
-  }
+  billingLog("lava_invoice_success", {
+    orderId: input.orderId,
+    httpStatus: response.status,
+    invoiceId: result.invoiceId,
+    checkoutUrl: result.checkoutUrl,
+    resolvedFrom: result.resolvedFrom,
+    statusCheck: result.statusCheck,
+    apiStatus: result.apiStatus,
+    invoiceStatus: result.invoiceStatus,
+    amountRub: result.amountRub,
+  });
 
   return {
     ok: true,
-    invoiceId,
+    invoiceId: result.invoiceId,
     orderId: input.orderId,
-    checkoutUrl,
-    amountRub: json.data?.amount ?? sum,
+    checkoutUrl: result.checkoutUrl,
+    amountRub: result.amountRub ?? sum,
+    resolvedFrom: result.resolvedFrom,
+    lavaDebug: {
+      statusCheck: result.statusCheck,
+      apiStatus: result.apiStatus,
+      invoiceStatus: result.invoiceStatus,
+      httpStatus: response.status,
+    },
   };
 }

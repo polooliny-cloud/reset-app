@@ -21,11 +21,16 @@
 ## 1. Checkout creation
 
 - [ ] `/subscription` → «Оформить подписку» → редирект на Lava (`checkout_url`)
+- [ ] Редирект только через `window.location.href` (не `window.open`)
+- [ ] Debug перед редиректом: `/subscription?checkout_debug=1` или `NEXT_PUBLIC_CHECKOUT_DEBUG=1` (в dev включено по умолчанию)
 - [ ] В логах сервера:
-  - [ ] `checkout_start`
-  - [ ] `lava_invoice_request` (payload без секретов)
-  - [ ] `lava_invoice_response` (`invoiceId`, `hasUrl: true`)
-  - [ ] `checkout_pending_payment_inserted`
+  - [ ] `checkout_start` (shopId, hookUrl, successUrl, failUrl)
+  - [ ] `lava_invoice_request` → `POST https://api.lava.ru/business/invoice/create`
+  - [ ] `checkout_response_raw` — полный JSON от Lava (`data.url`, `data.id`, `status_check`, `status`)
+  - [ ] `lava_invoice_success` (`checkoutUrl`, `resolvedFrom`: `data.url` или `canonical_pay_lava_ru`)
+  - [ ] `checkout_ready` / `checkout_pending_payment_inserted`
+- [ ] Ожидаемый формат URL: `https://pay.lava.ru/invoice/{invoice_uuid}`
+- [ ] Если `data.url` пустой — fallback на canonical `pay.lava.ru`; если URL нет совсем → HTTP 500 `checkout_url_missing`
 - [ ] В Supabase `payments`: строка `status = pending`, корректные `provider_invoice_id`, `metadata.plan`
 
 ## 2. Webhook (реальная оплата)
