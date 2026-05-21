@@ -313,7 +313,20 @@ export default function OnboardingPage() {
       clearOnboardingResumeAfterMagicLink();
       clearOnboardingPendingAuthSession();
       captureEvent('auth_success');
-      router.replace('/');
+
+      if (!onboardingCompleted) {
+        setStage('question');
+        setQuestionIndex(0);
+        return;
+      }
+
+      void refetchPremium().then((premium) => {
+        if (premium?.isPremium) {
+          router.replace('/');
+        } else {
+          setStage('install');
+        }
+      });
       return;
     }
 
@@ -518,10 +531,25 @@ export default function OnboardingPage() {
       const trial = await startFreeTrialClient();
 
       if (trial.ok) {
+        if (!trial.state.isPremium) {
+          setTrialError('Пробный период не активировался. Попробуйте ещё раз.');
+          setTrialStarting(false);
+          return;
+        }
         applyPremiumState(trial.state);
         markTrialActivationPending();
       } else if (trial.code === 'trial_already_used') {
-        await refetchPremium();
+        const premium = await refetchPremium();
+        if (premium?.isPremium) {
+          applyPremiumState(premium);
+          markTrialActivationPending();
+        } else {
+          setTrialError(
+            'Пробный период уже был использован для этого аккаунта. Откройте Reset+ в разделе подписки.',
+          );
+          setTrialStarting(false);
+          return;
+        }
       } else {
         setTrialError(trial.error);
         setTrialStarting(false);

@@ -5,8 +5,6 @@ import { startFreeTrial } from "@/lib/billing/startFreeTrial";
 import { trialLog } from "@/lib/billing/trialLog";
 import { getUserIdFromRequest } from "@/lib/billing/authFromRequest";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/supabase/database.types";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: result.error, code: result.code }, { status });
     }
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const reader = createClient<Database>(url, anonKey);
-    const state = await fetchPremiumStateForUser(reader, userId);
+    const state = await fetchPremiumStateForUser(admin, userId);
 
     trialLog("premium_activated", {
       userId,

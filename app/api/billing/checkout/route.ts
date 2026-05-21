@@ -8,6 +8,7 @@ import {
   planAmountKopecks,
 } from "@/lib/billing/lava/createCheckout";
 import type { LavaCheckoutPlan } from "@/lib/billing/lava/types";
+import { validateLavaBusinessEnv } from "@/lib/billing/lava/validateLavaEnv";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -53,13 +54,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
   }
 
-  const lavaApiKey = process.env.LAVA_API_KEY;
-  const lavaShopId = process.env.LAVA_SHOP_ID;
-
-  if (!lavaApiKey || !lavaShopId) {
-    billingLog("checkout_lava_not_configured", { userId }, "error");
+  const lavaEnv = validateLavaBusinessEnv();
+  if (!lavaEnv.ok) {
+    billingLog("checkout_lava_env_invalid", { userId, details: lavaEnv.details }, "error");
     return NextResponse.json(
-      { error: "Lava is not configured. Set LAVA_API_KEY and LAVA_SHOP_ID." },
+      { error: lavaEnv.error, code: "lava_env_invalid", details: lavaEnv.details },
       { status: 503 },
     );
   }
@@ -69,11 +68,18 @@ export async function POST(request: Request) {
   const hookUrl =
     process.env.LAVA_HOOK_URL ?? `${origin}/api/webhooks/lava`;
 
-  billingLog("checkout_start", { userId, plan, orderId, hookUrl });
+  billingLog("checkout_start", {
+    userId,
+    plan,
+    orderId,
+    hookUrl,
+    lavaApiHost: new URL(lavaEnv.apiBase).host,
+    shopIdPrefix: lavaEnv.shopId.slice(0, 8),
+  });
 
   const lava = await createLavaCheckoutInvoice({
-    shopId: lavaShopId,
-    apiKey: lavaApiKey,
+    shopId: lavaEnv.shopId,
+    apiKey: lavaEnv.apiKey,
     orderId,
     plan,
     userId,
@@ -177,7 +183,7 @@ export async function POST(request: Request) {
             successUrl: `${origin}/?billing=success`,
             failUrl: `${origin}/?billing=cancelled`,
             hookUrl,
-            shopId: lavaShopId,
+            shopId: lavaEnv.shopId,
             sumRub: PLAN_AMOUNTS_RUB[plan],
           },
         }

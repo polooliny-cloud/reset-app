@@ -11,6 +11,14 @@ export type SubscriptionPlanDb = "monthly" | "yearly" | "free_trial";
 
 export type PaymentStatusDb = "pending" | "paid" | "failed";
 
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 export interface Database {
   public: {
     Tables: {
@@ -154,7 +162,15 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      activate_free_trial: {
+        Args: {
+          p_user_id: string;
+          p_trial_days?: number;
+        };
+        Returns: Json;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

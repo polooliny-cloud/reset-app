@@ -20,7 +20,7 @@ import { supabase } from "@/lib/supabase";
 export type PremiumContextValue = PremiumState & {
   loading: boolean;
   error: string | null;
-  refetch: () => Promise<void>;
+  refetch: () => Promise<PremiumState | null>;
   /** Apply server-returned state without waiting for another fetch (onboarding trial). */
   applyPremiumState: (next: PremiumState) => void;
 };
@@ -34,7 +34,7 @@ const defaultState: PremiumContextValue = {
   canStartTrial: false,
   loading: true,
   error: null,
-  refetch: async () => {},
+  refetch: async () => null,
   applyPremiumState: () => {},
 };
 
@@ -70,33 +70,35 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     console.log("[billing] premium state applied from server", next);
   }, []);
 
-  const refetch = useCallback(async () => {
+  const refetch = useCallback(async (): Promise<PremiumState | null> => {
     if (!userId) {
-      setState({
+      const empty = {
         isPremium: false,
         isTrial: false,
         premiumUntil: null,
         subscriptionStatus: null,
         trialEndsAt: null,
         canStartTrial: false,
-      });
+      };
+      setState(empty);
       setLoading(false);
-      return;
+      return empty;
     }
 
     if (isDevNavBypassActive()) {
       console.log("[premium] dev bypass active, treat as premium");
-      setState({
+      const devState = {
         isPremium: true,
         isTrial: false,
         premiumUntil: null,
         subscriptionStatus: null,
         trialEndsAt: null,
         canStartTrial: false,
-      });
+      };
+      setState(devState);
       setError(null);
       setLoading(false);
-      return;
+      return devState;
     }
 
     setLoading(true);
@@ -106,10 +108,12 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       const next = await fetchPremiumStateForUser(supabase, userId);
       setState(next);
       console.log("[billing] premium state loaded", userId, next);
+      return next;
     } catch (e) {
       const message = e instanceof Error ? e.message : "Не удалось загрузить подписку";
       console.error("[billing] premium load failed", message);
       setError(message);
+      return null;
     } finally {
       setLoading(false);
     }

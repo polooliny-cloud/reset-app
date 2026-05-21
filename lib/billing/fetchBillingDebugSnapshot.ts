@@ -1,14 +1,9 @@
 import { fetchPremiumStateForUser } from "@/lib/billing/fetchPremiumData";
 import { getLastWebhookTrace, getWebhookTrace } from "@/lib/billing/devWebhookTrace";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/supabase/database.types";
 
 export async function fetchBillingDebugSnapshot(userId: string) {
   const admin = createAdminClient();
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const reader = createClient<Database>(url, anonKey);
 
   const [profileRes, paymentsRes, subscriptionRes, premiumState] = await Promise.all([
     admin
@@ -28,7 +23,7 @@ export async function fetchBillingDebugSnapshot(userId: string) {
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(5),
-    fetchPremiumStateForUser(reader, userId),
+    fetchPremiumStateForUser(admin, userId),
   ]);
 
   return {
