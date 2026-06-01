@@ -1,13 +1,16 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-
 import { useProfileState } from '@/app/components/ProfileProvider';
-import { enableDevNavBypass, isLocalhostHost } from '@/lib/dev/localNav';
+import { useAuth } from '@/lib/auth/useAuth';
+import {
+  clearDevNavBypass,
+  enableDevNavBypass,
+  isLocalhostHost,
+} from '@/lib/dev/localNav';
 import { clearOnboardingPendingAuthSession } from '@/lib/onboarding';
 
 export function DevTools() {
-  const router = useRouter();
+  const { signOut } = useAuth();
   const { resetOnboardingInDb } = useProfileState();
   const showOnboardingReset = process.env.NODE_ENV === 'development';
   const showHomeNav = isLocalhostHost();
@@ -22,7 +25,7 @@ export function DevTools() {
             type="button"
             onClick={() => {
               enableDevNavBypass();
-              router.push('/');
+              window.location.assign('/');
             }}
             className="rounded-lg border border-emerald-500/40 bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-950 shadow-sm hover:bg-emerald-200"
           >
@@ -32,7 +35,7 @@ export function DevTools() {
             type="button"
             onClick={() => {
               enableDevNavBypass();
-              router.push('/onboarding');
+              window.location.assign('/onboarding');
             }}
             className="rounded-lg border border-sky-500/40 bg-sky-100 px-2 py-1 text-xs font-medium text-sky-950 shadow-sm hover:bg-sky-200"
           >
@@ -45,9 +48,12 @@ export function DevTools() {
           type="button"
           onClick={() => {
             clearOnboardingPendingAuthSession();
-            void resetOnboardingInDb().then(() => {
-              window.location.reload();
-            });
+            clearDevNavBypass();
+            void resetOnboardingInDb()
+              .then(() => signOut())
+              .then(() => {
+                window.location.assign('/');
+              });
           }}
           className="rounded-lg border border-violet-500/40 bg-violet-100 px-2 py-1 text-xs font-medium text-violet-950 shadow-sm hover:bg-violet-200"
         >

@@ -567,11 +567,20 @@ export default function OnboardingPage() {
     setTrialStarting(false);
   }
 
+  function handleAuthBack() {
+    if (authStandalone && !session?.user) {
+      clearOnboardingPendingAuthSession();
+      router.replace('/');
+      return;
+    }
+    if (!authStandalone) {
+      setStage('welcome');
+    }
+  }
+
   function handleBack() {
     if (stage === 'authRegister' || stage === 'authLogin') {
-      if (!authStandalone) {
-        setStage('welcome');
-      }
+      handleAuthBack();
       return;
     }
     if (stage === 'question') {
@@ -756,7 +765,7 @@ export default function OnboardingPage() {
             <p className="text-body text-measure mt-4 text-center text-[15px] text-[#9A9AA0]">
               Давайте начнем с того, чтобы узнать, есть ли у вас проблемы с порно
             </p>
-            <div className="mt-auto w-full pt-8">
+            <div className="mt-10 w-full">
               <button
                 type="button"
                 onClick={() => {
@@ -781,15 +790,13 @@ export default function OnboardingPage() {
           <OnboardingOtpPanel
             mode="register"
             magicLinkResume={onboardingCompleted || authStandalone ? 'home' : 'question'}
-            hideBack={authStandalone}
+            hideBack={authStandalone && !!session?.user}
             onSwitchToLogin={() => {
               captureEvent('auth_screen_viewed', { mode: 'login' });
               setStage('authLogin');
             }}
             onSwitchToRegister={() => setStage('authRegister')}
-            onBack={() => {
-              if (!authStandalone) setStage('welcome');
-            }}
+            onBack={handleAuthBack}
           />
         ) : null}
 
@@ -797,15 +804,13 @@ export default function OnboardingPage() {
           <OnboardingOtpPanel
             mode="login"
             magicLinkResume={onboardingCompleted || authStandalone ? 'home' : 'question'}
-            hideBack={authStandalone}
+            hideBack={authStandalone && !!session?.user}
             onSwitchToLogin={() => setStage('authLogin')}
             onSwitchToRegister={() => {
               captureEvent('auth_screen_viewed', { mode: 'register' });
               setStage('authRegister');
             }}
-            onBack={() => {
-              if (!authStandalone) setStage('welcome');
-            }}
+            onBack={handleAuthBack}
           />
         ) : null}
 

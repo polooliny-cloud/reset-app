@@ -11,13 +11,6 @@
 - [ ] Миграции `0004`, `0005` применены в Supabase
 - [ ] Локально: `npm run dev`, авторизованный пользователь
 
-## Dev tools (локально)
-
-- [ ] Панель **Billing debug** (правый нижний угол) открывается
-- [ ] `GET /api/dev/billing/status` возвращает profile, payments, subscriptions, premiumState
-- [ ] `POST /api/dev/billing/mock-success` активирует premium через `handleLavaWebhook` → `activatePaidSubscription`
-- [ ] После mock: `premiumState.isPremium === true`, в логах `[billing] premium_activated`
-
 ## 1. Checkout creation
 
 - [ ] `/subscription` → «Оформить подписку» → редирект на Lava (`checkout_url`)

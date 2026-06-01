@@ -3,9 +3,10 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { useDevNavBypass } from '@/app/hooks/useDevNavBypass';
 import { useProfileState } from '@/app/components/ProfileProvider';
 import { RESET_ONBOARDING_QUERY } from '@/lib/onboarding';
-import { isDevNavBypassActive } from '@/lib/dev/localNav';
+import { isPublicPath } from '@/lib/routing/publicPaths';
 import { useAuth } from '@/lib/auth/useAuth';
 
 function GateLoading() {
@@ -24,6 +25,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { session } = useAuth();
   const { appReady, onboardingCompleted, resetOnboardingInDb } = useProfileState();
+  const devBypass = useDevNavBypass();
   const [checked, setChecked] = useState(false);
   const [checkedPath, setCheckedPath] = useState<string | null>(null);
 
@@ -51,7 +53,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
       }
     }
 
-    if (isDevNavBypassActive()) {
+    if (devBypass) {
       setChecked(true);
       setCheckedPath(pathname);
       return;
@@ -68,7 +70,12 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
     }
 
     if (!session?.user) {
-      router.replace('/onboarding');
+      if (isPublicPath(pathname)) {
+        setChecked(true);
+        setCheckedPath(pathname);
+        return;
+      }
+      router.replace('/');
       return;
     }
 
@@ -79,7 +86,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
 
     setChecked(true);
     setCheckedPath(pathname);
-  }, [appReady, pathname, router, session?.user, onboardingCompleted, resetOnboardingInDb]);
+  }, [appReady, pathname, router, session?.user, onboardingCompleted, resetOnboardingInDb, devBypass]);
 
   if (!appReady || !checked || checkedPath !== pathname) {
     return <GateLoading />;

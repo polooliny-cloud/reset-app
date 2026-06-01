@@ -24,7 +24,7 @@ export default function SettingsPage() {
       clearOnboardingResumeAfterMagicLink();
       clearOnboardingPendingAuthSession();
       await signOut();
-      router.replace("/onboarding");
+      router.replace("/");
     } finally {
       setSigningOut(false);
     }

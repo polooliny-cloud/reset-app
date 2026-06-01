@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { AnalyticsAppMount } from "./components/AnalyticsAppMount";
 import { AuthProvider } from "./components/AuthProvider";
-import { BillingDebugPanel } from "./components/BillingDebugPanel";
 import { DevTools } from "./components/DevTools";
 import { OnboardingGate } from "./components/OnboardingGate";
 import { PostHogProvider } from "./components/PostHogProvider";
@@ -67,7 +66,6 @@ export default function RootLayout({
                       {children}
                     </OnboardingGate>
                     <DevTools />
-                    <BillingDebugPanel />
                   </ProfileProgressProvider>
                 </PremiumProvider>
               </ProfileProvider>

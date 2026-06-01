@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
 
 import { isDevNavBypassActive } from "@/lib/dev/localNav";
+import { isPublicPath } from "@/lib/routing/publicPaths";
 import { useAuth } from "@/lib/auth/useAuth";
 
 function SessionLoading() {
@@ -30,17 +31,17 @@ export function SessionGate({ children }: { children: ReactNode }) {
       redirectingRef.current = false;
       return;
     }
-    if (pathname === "/onboarding") return;
+    if (isPublicPath(pathname)) return;
     if (redirectingRef.current) return;
     redirectingRef.current = true;
-    router.replace("/onboarding");
+    router.replace("/");
   }, [initializing, session, pathname, router]);
 
   if (initializing) {
     return <SessionLoading />;
   }
 
-  if (!session?.user && pathname !== "/onboarding" && !isDevNavBypassActive()) {
+  if (!session?.user && !isPublicPath(pathname) && !isDevNavBypassActive()) {
     return <SessionLoading />;
   }
 

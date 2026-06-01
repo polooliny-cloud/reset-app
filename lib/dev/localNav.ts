@@ -1,4 +1,10 @@
 export const DEV_NAV_BYPASS_KEY = "dev_nav_bypass";
+export const DEV_NAV_BYPASS_CHANGE_EVENT = "dev-nav-bypass-change";
+
+function notifyDevNavBypassChange(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(DEV_NAV_BYPASS_CHANGE_EVENT));
+}
 
 export function isLocalhostHost(): boolean {
   if (typeof window === "undefined") return false;
@@ -19,6 +25,16 @@ export function enableDevNavBypass(): void {
   if (!isLocalhostHost()) return;
   try {
     sessionStorage.setItem(DEV_NAV_BYPASS_KEY, "1");
+    notifyDevNavBypassChange();
+  } catch {
+    // ignore
+  }
+}
+
+export function clearDevNavBypass(): void {
+  try {
+    sessionStorage.removeItem(DEV_NAV_BYPASS_KEY);
+    notifyDevNavBypassChange();
   } catch {
     // ignore
   }
