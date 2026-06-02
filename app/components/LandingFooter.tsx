@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const FOOTER_LINKS = [
+export const FOOTER_LINKS = [
   { href: "/privacy", label: "Политика конфиденциальности" },
   { href: "/terms", label: "Условия использования" },
   { href: "/refunds", label: "Возврат средств" },

@@ -1,5 +1,7 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { Suspense } from "react";
+
+import { PublicLegalBackButton } from "@/app/components/PublicLegalBackButton";
 
 type Props = {
   title: string;
@@ -7,9 +9,6 @@ type Props = {
 };
 
 export function PublicLegalPageShell({ title, children }: Props) {
-  const topInset = "calc(8px + env(safe-area-inset-top))";
-  const leftInset = "calc(16px + env(safe-area-inset-left))";
-
   return (
     <main className="app-shell min-h-screen">
       <div
@@ -19,22 +18,9 @@ export function PublicLegalPageShell({ title, children }: Props) {
           paddingBottom: "calc(80px + env(safe-area-inset-bottom))",
         }}
       >
-        <Link
-          href="/"
-          aria-label="На главную"
-          className="fixed z-50 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2.5 text-white/80 transition duration-200 ease-out hover:bg-white/10 hover:text-white"
-          style={{ top: topInset, left: leftInset }}
-        >
-          <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none">
-            <path
-              d="M15 18L9 12L15 6"
-              stroke="currentColor"
-              strokeWidth="1.9"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </Link>
+        <Suspense fallback={null}>
+          <PublicLegalBackButton />
+        </Suspense>
 
         <h1 className="text-flow-heading text-2xl font-semibold text-white sm:text-[1.75rem]">
           {title}

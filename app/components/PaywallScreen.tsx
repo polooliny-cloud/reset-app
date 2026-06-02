@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { PaymentRedirectSheet } from "@/app/components/PaymentRedirectSheet";
 import { usePremium } from "@/app/components/PremiumProvider";
 import { PLAN_AMOUNTS_RUB, type PaidPlanId } from "@/lib/billing/planPrices";
 import { startFreeTrialClient } from "@/lib/premium/startFreeTrialClient";
@@ -26,11 +25,6 @@ export function PaywallScreen({ onTrialStarted }: Props) {
   const [busy, setBusy] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PaidPlanId | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pendingCheckout, setPendingCheckout] = useState<{
-    confirmationUrl: string;
-    paymentId?: string;
-    orderId?: string;
-  } | null>(null);
 
   async function handleStartTrial() {
     setBusy(true);
@@ -53,18 +47,13 @@ export function PaywallScreen({ onTrialStarted }: Props) {
   async function handleCheckout(plan: PaidPlanId) {
     setCheckoutPlan(plan);
     setError(null);
-    setPendingCheckout(null);
     try {
       const result = await startCheckoutClient(plan);
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      setPendingCheckout({
-        confirmationUrl: result.confirmationUrl,
-        paymentId: result.paymentId,
-        orderId: result.orderId,
-      });
+      window.location.assign(result.confirmationUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка сети");
     } finally {
@@ -74,17 +63,6 @@ export function PaywallScreen({ onTrialStarted }: Props) {
 
   return (
     <main className="app-shell flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:px-6">
-      {pendingCheckout ? (
-        <PaymentRedirectSheet
-          confirmationUrl={pendingCheckout.confirmationUrl}
-          paymentId={pendingCheckout.paymentId}
-          orderId={pendingCheckout.orderId}
-          onContinue={() => {
-            window.location.assign(pendingCheckout.confirmationUrl);
-          }}
-          onCancel={() => setPendingCheckout(null)}
-        />
-      ) : null}
       <div className="surface-card w-full max-w-md px-6 py-8 text-center">
         <p className="text-sm uppercase tracking-[0.18em] text-white/70">Reset Premium</p>
         <h1 className="text-title mt-4 text-2xl font-semibold text-white">

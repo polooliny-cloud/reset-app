@@ -29,6 +29,32 @@ function formatDateRu(iso: string | null): string {
   });
 }
 
+function formatAccessEndDateRu(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "";
+
+  const now = new Date();
+  const base = d.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+  });
+
+  if (d.getFullYear() === now.getFullYear()) {
+    return base;
+  }
+
+  if (d.getFullYear() === now.getFullYear() + 1) {
+    return `${base} следующего года`;
+  }
+
+  return d.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export function getPremiumHeaderCopy(state: PremiumState): {
   title: string;
   subtitle: string;
@@ -61,21 +87,21 @@ export function getPremiumHeaderCopy(state: PremiumState): {
 
   if (kind === "premium" && state.premiumUntil) {
     return {
-      title: "Premium активен",
-      subtitle: `Действует до ${formatDateRu(state.premiumUntil)}`,
+      title: `Reset+ активирован до ${formatAccessEndDateRu(state.premiumUntil)}`,
+      subtitle: "Платный доступ включён",
     };
   }
 
   if (kind === "premium") {
     return {
-      title: "Premium активен",
-      subtitle: "Полный доступ ко всем функциям",
+      title: "Reset+ активирован",
+      subtitle: "Платный доступ включён",
     };
   }
 
   return {
-    title: "Premium не активен",
-    subtitle: "Оформите подписку, чтобы открыть все инструменты",
+    title: "Reset+ не активен",
+    subtitle: "Выберите подходящий вам тариф и активируйте Reset+",
   };
 }
 

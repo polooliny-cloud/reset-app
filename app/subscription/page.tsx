@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { PaymentRedirectSheet } from "@/app/components/PaymentRedirectSheet";
+import { FOOTER_LINKS } from "@/app/components/LandingFooter";
 import { usePremium } from "@/app/components/PremiumProvider";
 import { PLAN_AMOUNTS_RUB } from "@/lib/billing/planPrices";
 import { startCheckoutClient } from "@/lib/premium/startCheckoutClient";
@@ -38,11 +38,6 @@ export default function SubscriptionPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [pendingCheckout, setPendingCheckout] = useState<{
-    confirmationUrl: string;
-    paymentId?: string;
-    orderId?: string;
-  } | null>(null);
 
   const topInset = "calc(8px + env(safe-area-inset-top))";
 
@@ -54,7 +49,6 @@ export default function SubscriptionPage() {
     setBusy("checkout");
     setError(null);
     setMessage(null);
-    setPendingCheckout(null);
 
     const result = await startCheckoutClient(selectedPlan);
     if (!result.ok) {
@@ -63,12 +57,7 @@ export default function SubscriptionPage() {
       return;
     }
 
-    setPendingCheckout({
-      confirmationUrl: result.confirmationUrl,
-      paymentId: result.paymentId,
-      orderId: result.orderId,
-    });
-    setBusy(null);
+    redirectToCheckout(result.confirmationUrl);
   }
 
   async function handleStartTrial() {
@@ -95,15 +84,6 @@ export default function SubscriptionPage() {
 
   return (
     <main className="app-shell flex min-h-screen flex-col px-4 pb-10 pt-5 sm:px-6">
-      {pendingCheckout ? (
-        <PaymentRedirectSheet
-          confirmationUrl={pendingCheckout.confirmationUrl}
-          paymentId={pendingCheckout.paymentId}
-          orderId={pendingCheckout.orderId}
-          onContinue={() => redirectToCheckout(pendingCheckout.confirmationUrl)}
-          onCancel={() => setPendingCheckout(null)}
-        />
-      ) : null}
       <div
         className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(244,63,94,0.12),transparent_55%)]"
         aria-hidden
@@ -127,11 +107,8 @@ export default function SubscriptionPage() {
           </svg>
         </Link>
 
-        <p className="text-center text-[0.6875rem] font-semibold uppercase tracking-[0.2em] text-rose-200/80">
+        <h1 className="text-flow-heading text-center text-4xl font-semibold text-white">
           Reset+
-        </p>
-        <h1 className="text-flow-heading mt-2 text-center text-2xl font-semibold text-white">
-          Подписка
         </h1>
 
         <section className="surface-card mt-6 overflow-hidden p-5">
@@ -150,7 +127,7 @@ export default function SubscriptionPage() {
             ) : null}
             {!loading && statusKind === "none" ? (
               <p className="text-measure mt-1.5 text-sm text-[#A8A8AE]">
-                Активируйте пробный период или оформите подписку, чтобы открыть Reset+.
+                Выберите подходящий вам тариф и активируйте Reset+.
               </p>
             ) : null}
             {statusKind === "trial" ? (
@@ -242,7 +219,7 @@ export default function SubscriptionPage() {
               disabled={busy !== null || loading}
               className="primary-cta"
             >
-              {busy === "checkout" ? "Переход к оплате…" : "Оформить подписку"}
+              {busy === "checkout" ? "Переход к оплате…" : "Оплатить"}
             </button>
           ) : null}
 
@@ -261,19 +238,20 @@ export default function SubscriptionPage() {
         </section>
 
         <footer className="mt-10 border-t border-white/8 pt-6">
-          <nav className="flex flex-col items-center gap-3 text-sm">
-            <Link href="/privacy" className="text-[#9A9AA0] underline underline-offset-4 hover:text-white">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="text-[#9A9AA0] underline underline-offset-4 hover:text-white">
-              Terms of Service
-            </Link>
-            <Link
-              href="/subscription-terms"
-              className="text-[#9A9AA0] underline underline-offset-4 hover:text-white"
-            >
-              Subscription Terms
-            </Link>
+          <nav aria-label="Правовая информация" className="mx-auto flex max-w-xs flex-col items-stretch gap-1.5">
+            {FOOTER_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={`${href}?from=subscription`}
+                className="px-3 py-1.5 text-center text-[10px] leading-snug underline underline-offset-[3px] transition duration-200 sm:text-[11px]"
+                style={{
+                  color: "rgba(148, 153, 162, 0.38)",
+                  textDecorationColor: "rgba(148, 153, 162, 0.28)",
+                }}
+              >
+                {label}
+              </Link>
+            ))}
           </nav>
         </footer>
       </div>
