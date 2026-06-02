@@ -285,21 +285,14 @@ export default function OnboardingPage() {
   useLayoutEffect(() => {
     if (!appReady || initializing) return;
     if (session?.user) {
-      if (onboardingCompleted) {
-        setAuthStandalone(true);
-        setStage((prev) =>
-          prev === 'welcome' || prev === 'authRegister' || prev === 'authLogin'
-            ? 'authRegister'
-            : prev,
-        );
-      }
+      clearOnboardingPendingAuthSession();
       return;
     }
     if (hasOnboardingPendingAuthSession()) {
       setAuthStandalone(true);
       setStage((prev) => (prev === 'welcome' ? 'authRegister' : prev));
     }
-  }, [appReady, initializing, session?.user, onboardingCompleted]);
+  }, [appReady, initializing, session?.user]);
 
   useEffect(() => {
     if (!session?.user) return;

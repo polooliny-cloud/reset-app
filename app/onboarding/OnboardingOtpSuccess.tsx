@@ -2,6 +2,7 @@
 
 import { OTP_MESSAGES } from "@/lib/auth/mapOtpError";
 import { formatCooldownSeconds } from "@/lib/auth/otpCooldown";
+import { isStandalonePwa } from "@/lib/auth/isStandalonePwa";
 
 type Props = {
   email: string;
@@ -22,6 +23,7 @@ export function OnboardingOtpSuccess({
 }: Props) {
   const onCooldown = cooldownSec > 0;
   const canResend = !onCooldown && !resending;
+  const standalone = isStandalonePwa();
 
   return (
     <div className="surface-card animate-onboarding-step px-5 py-7">
@@ -65,9 +67,18 @@ export function OnboardingOtpSuccess({
         </button>
       </div>
 
-      <p className="text-body text-measure mt-6 text-center text-[14px] leading-relaxed text-[#8C8C92]">
-        {OTP_MESSAGES.successHint}
-      </p>
+      {standalone ? (
+        <p className="text-body text-measure mt-6 text-center text-[14px] leading-relaxed text-[#8C8C92]">
+          Откройте письмо и перейдите по ссылке{" "}
+          <span className="text-[#B8B8BE]">в этом приложении</span> (долгое нажатие на ссылку →
+          «Открыть в Reset»). Если ссылка открылась в Safari или Chrome, войдите там один раз, затем
+          снова откройте Reset с главного экрана.
+        </p>
+      ) : (
+        <p className="text-body text-measure mt-6 text-center text-[14px] leading-relaxed text-[#8C8C92]">
+          {OTP_MESSAGES.successHint}
+        </p>
+      )}
     </div>
   );
 }

@@ -23,14 +23,14 @@ function GateLoading() {
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { session } = useAuth();
+  const { session, initializing: authInitializing } = useAuth();
   const { appReady, onboardingCompleted, resetOnboardingInDb } = useProfileState();
   const devBypass = useDevNavBypass();
   const [checked, setChecked] = useState(false);
   const [checkedPath, setCheckedPath] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!appReady) return;
+    if (authInitializing || !appReady) return;
 
     setChecked(false);
     setCheckedPath(null);
@@ -86,9 +86,18 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
 
     setChecked(true);
     setCheckedPath(pathname);
-  }, [appReady, pathname, router, session?.user, onboardingCompleted, resetOnboardingInDb, devBypass]);
+  }, [
+    authInitializing,
+    appReady,
+    pathname,
+    router,
+    session?.user,
+    onboardingCompleted,
+    resetOnboardingInDb,
+    devBypass,
+  ]);
 
-  if (!appReady || !checked || checkedPath !== pathname) {
+  if (authInitializing || !appReady || !checked || checkedPath !== pathname) {
     return <GateLoading />;
   }
 

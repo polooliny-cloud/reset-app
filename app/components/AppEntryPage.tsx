@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
 import { useDevNavBypass } from "@/app/hooks/useDevNavBypass";
 import { useAuth } from "@/lib/auth/useAuth";
 
@@ -23,13 +21,8 @@ function EntryLoading() {
 export function AppEntryPage() {
   const { session, initializing } = useAuth();
   const devBypass = useDevNavBypass();
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (initializing || !mounted) {
+  if (initializing) {
     return <EntryLoading />;
   }
 

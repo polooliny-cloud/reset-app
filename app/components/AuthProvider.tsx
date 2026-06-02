@@ -6,14 +6,18 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
 import type { Session, User } from "@supabase/supabase-js";
 
+import { clearStaleAuthUiState } from "@/lib/auth/clearStaleAuthUiState";
+import { getMagicLinkRedirectUrl } from "@/lib/auth/authRedirectUrl";
+import { migrateLegacyLocalStorageSession } from "@/lib/auth/migrateLegacySession";
 import { mapOtpError, OTP_MESSAGES } from "@/lib/auth/mapOtpError";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type AuthOtpIntent = "register" | "login";
 
@@ -27,7 +31,7 @@ export type SignInWithOtpResult = {
 export type AuthContextValue = {
   session: Session | null;
   user: User | null;
-  /** True until initial session hydration from storage / URL completes. */
+  /** True until initial session hydration from cookies / URL completes. */
   initializing: boolean;
   signInWithOtp: (
     email: string,
@@ -47,52 +51,115 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
+const INIT_FALLBACK_MS = 8_000;
+
+function hasAuthParamsInUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  const url = new URL(window.location.href);
+  return (
+    url.searchParams.has("code") ||
+    url.hash.includes("access_token=") ||
+    url.hash.includes("error=") ||
+    url.hash.includes("error_description=")
+  );
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const initDoneRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
+    let subscription: { unsubscribe: () => void } | null = null;
 
-    void supabase.auth.getSession().then(({ data: { session: restored }, error }) => {
-      if (!mounted) return;
-
-      if (error) {
-        console.error("[auth] getSession failed", error.message, error);
-        setSession(null);
-      } else if (restored?.user) {
-        console.log("[auth] session restored", restored.user.id);
-        setSession(restored);
-      } else {
-        console.log("[auth] session missing");
-        setSession(null);
-      }
-
-      setInitializing(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (!mounted) return;
-
-      console.log("[auth] auth state changed", event, nextSession?.user?.id ?? "no-user");
-
-      if (nextSession?.user) {
-        console.log("[auth] user loaded", nextSession.user.id);
-      } else if (event === "SIGNED_OUT") {
-        console.log("[auth] session missing");
-      }
-
+    const finishInitializing = (nextSession: Session | null) => {
+      if (!mounted || initDoneRef.current) return;
+      initDoneRef.current = true;
       setSession(nextSession);
       setInitializing(false);
-    });
+
+      if (!nextSession?.user) {
+        clearStaleAuthUiState();
+      }
+    };
+
+    const waitForUrlSession = async (): Promise<Session | null> => {
+      if (!hasAuthParamsInUrl()) return null;
+
+      const deadline = Date.now() + INIT_FALLBACK_MS;
+      while (mounted && Date.now() < deadline) {
+        const { data: { session: fromUrl } } = await supabase.auth.getSession();
+        if (fromUrl?.user) return fromUrl;
+        await new Promise((resolve) => setTimeout(resolve, 80));
+      }
+      return null;
+    };
+
+    void (async () => {
+      await migrateLegacyLocalStorageSession(supabase);
+      if (!mounted) return;
+
+      const {
+        data: { subscription: sub },
+      } = supabase.auth.onAuthStateChange((event, nextSession) => {
+        if (!mounted) return;
+
+        console.log("[auth] auth state changed", event, nextSession?.user?.id ?? "no-user");
+
+        setSession(nextSession);
+
+        if (event === "INITIAL_SESSION") {
+          finishInitializing(nextSession);
+          return;
+        }
+
+        if (
+          event === "SIGNED_IN" ||
+          event === "SIGNED_OUT" ||
+          event === "TOKEN_REFRESHED" ||
+          event === "USER_UPDATED"
+        ) {
+          initDoneRef.current = true;
+          setInitializing(false);
+
+          if (!nextSession?.user) {
+            clearStaleAuthUiState();
+          }
+        }
+      });
+
+      subscription = sub;
+
+      const urlSession = await waitForUrlSession();
+      if (!mounted) return;
+
+      if (urlSession?.user && !initDoneRef.current) {
+        finishInitializing(urlSession);
+      }
+    })();
+
+    const fallbackTimer = window.setTimeout(() => {
+      if (!mounted || initDoneRef.current) return;
+
+      void supabase.auth.getSession().then(({ data: { session: restored }, error }) => {
+        if (!mounted || initDoneRef.current) return;
+
+        if (error) {
+          console.error("[auth] getSession fallback failed", error.message, error);
+        }
+
+        finishInitializing(restored);
+      });
+    }, INIT_FALLBACK_MS);
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      window.clearTimeout(fallbackTimer);
+      subscription?.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   const signInWithOtpCb = useCallback(
     async (
@@ -109,7 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.signInWithOtp({
           email: trimmed,
           options: {
-            emailRedirectTo: "https://resetapp.ru/onboarding",
+            emailRedirectTo: getMagicLinkRedirectUrl("/onboarding"),
             shouldCreateUser: intent === "register",
           },
         });
@@ -131,16 +198,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false, error: OTP_MESSAGES.network };
       }
     },
-    [],
+    [supabase],
   );
 
   const signOutCb = useCallback(async () => {
     console.log("[auth] signOut requested");
+    clearStaleAuthUiState();
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("[auth] signOut failed", error.message, error);
     }
-  }, []);
+  }, [supabase]);
 
   const user = session?.user ?? null;
 
