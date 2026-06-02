@@ -10,7 +10,7 @@ export type StartFreeTrialClientResult =
 
 /**
  * Activates the 3-day free trial via Supabase only.
- * MUST NOT call Lava, checkout, payments, or webhooks.
+ * MUST NOT call paid checkout, payments, or webhooks.
  */
 export async function startFreeTrialClient(): Promise<StartFreeTrialClientResult> {
   const token = await getBillingAccessToken();

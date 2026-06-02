@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 
+import { PaymentRedirectSheet } from "@/app/components/PaymentRedirectSheet";
 import { usePremium } from "@/app/components/PremiumProvider";
-import { PLAN_AMOUNTS_RUB } from "@/lib/billing/planPrices";
-import type { LavaCheckoutPlan } from "@/lib/billing/lava/types";
-import { isCheckoutRedirectDebugEnabled } from "@/lib/billing/lava/isCheckoutDebug";
+import { PLAN_AMOUNTS_RUB, type PaidPlanId } from "@/lib/billing/planPrices";
 import { startFreeTrialClient } from "@/lib/premium/startFreeTrialClient";
 import { startCheckoutClient } from "@/lib/premium/startCheckoutClient";
-import { CheckoutRedirectDebug } from "@/app/components/CheckoutRedirectDebug";
 
 type Props = {
   onTrialStarted?: () => void;
@@ -18,7 +16,7 @@ function formatRubPrice(amount: number): string {
   return `${amount.toLocaleString("ru-RU")} ₽`;
 }
 
-const PLANS: { id: LavaCheckoutPlan; label: string; price: string }[] = [
+const PLANS: { id: PaidPlanId; label: string; price: string }[] = [
   { id: "monthly", label: "Месяц", price: formatRubPrice(PLAN_AMOUNTS_RUB.monthly) },
   { id: "yearly", label: "Год", price: formatRubPrice(PLAN_AMOUNTS_RUB.yearly) },
 ];
@@ -26,13 +24,12 @@ const PLANS: { id: LavaCheckoutPlan; label: string; price: string }[] = [
 export function PaywallScreen({ onTrialStarted }: Props) {
   const { canStartTrial, refetch, loading } = usePremium();
   const [busy, setBusy] = useState(false);
-  const [checkoutPlan, setCheckoutPlan] = useState<LavaCheckoutPlan | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<PaidPlanId | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingCheckout, setPendingCheckout] = useState<{
-    checkoutUrl: string;
-    invoiceId?: string;
+    confirmationUrl: string;
+    paymentId?: string;
     orderId?: string;
-    resolvedFrom?: string;
   } | null>(null);
 
   async function handleStartTrial() {
@@ -53,7 +50,7 @@ export function PaywallScreen({ onTrialStarted }: Props) {
     }
   }
 
-  async function handleCheckout(plan: LavaCheckoutPlan) {
+  async function handleCheckout(plan: PaidPlanId) {
     setCheckoutPlan(plan);
     setError(null);
     setPendingCheckout(null);
@@ -63,16 +60,11 @@ export function PaywallScreen({ onTrialStarted }: Props) {
         setError(result.error);
         return;
       }
-      if (isCheckoutRedirectDebugEnabled()) {
-        setPendingCheckout({
-          checkoutUrl: result.checkoutUrl,
-          invoiceId: result.invoiceId,
-          orderId: result.orderId,
-          resolvedFrom: result.resolvedFrom,
-        });
-        return;
-      }
-      window.location.href = result.checkoutUrl;
+      setPendingCheckout({
+        confirmationUrl: result.confirmationUrl,
+        paymentId: result.paymentId,
+        orderId: result.orderId,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка сети");
     } finally {
@@ -83,13 +75,12 @@ export function PaywallScreen({ onTrialStarted }: Props) {
   return (
     <main className="app-shell flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:px-6">
       {pendingCheckout ? (
-        <CheckoutRedirectDebug
-          checkoutUrl={pendingCheckout.checkoutUrl}
-          invoiceId={pendingCheckout.invoiceId}
+        <PaymentRedirectSheet
+          confirmationUrl={pendingCheckout.confirmationUrl}
+          paymentId={pendingCheckout.paymentId}
           orderId={pendingCheckout.orderId}
-          resolvedFrom={pendingCheckout.resolvedFrom}
           onContinue={() => {
-            window.location.href = pendingCheckout.checkoutUrl;
+            window.location.assign(pendingCheckout.confirmationUrl);
           }}
           onCancel={() => setPendingCheckout(null)}
         />
@@ -134,7 +125,7 @@ export function PaywallScreen({ onTrialStarted }: Props) {
           ))}
 
           <p className="text-xs text-[#8C8C92]">
-            Оплата через Lava. Статус обновляется автоматически после оплаты.
+            Оплата через ЮKassa. Premium активируется автоматически после подтверждения платежа.
           </p>
         </div>
       </div>

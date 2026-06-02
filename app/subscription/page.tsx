@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { CheckoutRedirectDebug } from "@/app/components/CheckoutRedirectDebug";
+import { PaymentRedirectSheet } from "@/app/components/PaymentRedirectSheet";
 import { usePremium } from "@/app/components/PremiumProvider";
-import { isCheckoutRedirectDebugEnabled } from "@/lib/billing/lava/isCheckoutDebug";
 import { PLAN_AMOUNTS_RUB } from "@/lib/billing/planPrices";
 import { startCheckoutClient } from "@/lib/premium/startCheckoutClient";
 import { startFreeTrialClient } from "@/lib/premium/startFreeTrialClient";
-import type { LavaCheckoutPlan } from "@/lib/billing/lava/types";
+import type { PaidPlanId } from "@/lib/billing/planPrices";
 import { getPremiumHeaderCopy, getPremiumStatusKind } from "@/lib/premium/presentation";
 
 function formatRubPrice(amount: number): string {
@@ -24,7 +23,7 @@ const BENEFITS = [
   { icon: "★", title: "Premium функции", text: "Задания, миссии и расширенная аналитика" },
 ] as const;
 
-const PLANS: { id: LavaCheckoutPlan; label: string; price: string; badge?: string }[] = [
+const PLANS: { id: PaidPlanId; label: string; price: string; badge?: string }[] = [
   { id: "monthly", label: "Месяц", price: formatRubPrice(PLAN_AMOUNTS_RUB.monthly) },
   { id: "yearly", label: "Год", price: formatRubPrice(PLAN_AMOUNTS_RUB.yearly), badge: "Лучшее предложение" },
 ];
@@ -35,22 +34,20 @@ export default function SubscriptionPage() {
   const header = getPremiumHeaderCopy(premium);
   const statusKind = getPremiumStatusKind(premium);
 
-  const [selectedPlan, setSelectedPlan] = useState<LavaCheckoutPlan>("yearly");
+  const [selectedPlan, setSelectedPlan] = useState<PaidPlanId>("yearly");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pendingCheckout, setPendingCheckout] = useState<{
-    checkoutUrl: string;
-    invoiceId?: string;
+    confirmationUrl: string;
+    paymentId?: string;
     orderId?: string;
-    resolvedFrom?: string;
-    debug?: Record<string, unknown>;
   } | null>(null);
 
   const topInset = "calc(8px + env(safe-area-inset-top))";
 
   function redirectToCheckout(url: string) {
-    window.location.href = url;
+    window.location.assign(url);
   }
 
   async function handleSubscribe() {
@@ -61,28 +58,17 @@ export default function SubscriptionPage() {
 
     const result = await startCheckoutClient(selectedPlan);
     if (!result.ok) {
-      const details =
-        result.details && typeof result.details === "object"
-          ? ` (${JSON.stringify(result.details)})`
-          : "";
-      setError(`${result.error}${details}`);
+      setError(result.error);
       setBusy(null);
       return;
     }
 
-    if (isCheckoutRedirectDebugEnabled()) {
-      setPendingCheckout({
-        checkoutUrl: result.checkoutUrl,
-        invoiceId: result.invoiceId,
-        orderId: result.orderId,
-        resolvedFrom: result.resolvedFrom,
-        debug: result.debug as Record<string, unknown> | undefined,
-      });
-      setBusy(null);
-      return;
-    }
-
-    redirectToCheckout(result.checkoutUrl);
+    setPendingCheckout({
+      confirmationUrl: result.confirmationUrl,
+      paymentId: result.paymentId,
+      orderId: result.orderId,
+    });
+    setBusy(null);
   }
 
   async function handleStartTrial() {
@@ -110,13 +96,11 @@ export default function SubscriptionPage() {
   return (
     <main className="app-shell flex min-h-screen flex-col px-4 pb-10 pt-5 sm:px-6">
       {pendingCheckout ? (
-        <CheckoutRedirectDebug
-          checkoutUrl={pendingCheckout.checkoutUrl}
-          invoiceId={pendingCheckout.invoiceId}
+        <PaymentRedirectSheet
+          confirmationUrl={pendingCheckout.confirmationUrl}
+          paymentId={pendingCheckout.paymentId}
           orderId={pendingCheckout.orderId}
-          resolvedFrom={pendingCheckout.resolvedFrom}
-          lavaDebug={pendingCheckout.debug}
-          onContinue={() => redirectToCheckout(pendingCheckout.checkoutUrl)}
+          onContinue={() => redirectToCheckout(pendingCheckout.confirmationUrl)}
           onCancel={() => setPendingCheckout(null)}
         />
       ) : null}
@@ -272,8 +256,7 @@ export default function SubscriptionPage() {
           </button>
 
           <p className="text-center text-xs text-[#8C8C92]">
-            Управление подпиской: оплата через Lava. Отмена и продление — в личном кабинете платёжного
-            сервиса после оформления.
+            Оплата проходит через ЮKassa. Premium активируется только после подтверждения платежа.
           </p>
         </section>
 

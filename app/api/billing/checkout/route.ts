@@ -2,13 +2,10 @@ import { NextResponse } from "next/server";
 
 import { getUserIdFromRequest } from "@/lib/billing/authFromRequest";
 import { billingLog } from "@/lib/billing/log";
-import {
-  createLavaCheckoutInvoice,
-  PLAN_AMOUNTS_RUB,
-  planAmountKopecks,
-} from "@/lib/billing/lava/createCheckout";
-import type { LavaCheckoutPlan } from "@/lib/billing/lava/types";
-import { validateLavaBusinessEnv } from "@/lib/billing/lava/validateLavaEnv";
+import { PLAN_AMOUNTS_RUB, type PaidPlanId } from "@/lib/billing/planPrices";
+import { createYookassaPayment, planAmountKopecks } from "@/lib/billing/yookassa/client";
+import { validateYookassaEnv } from "@/lib/billing/yookassa/env";
+import { isYookassaPlan } from "@/lib/billing/yookassa/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +18,12 @@ function getAppOrigin(request: Request): string {
   const proto = request.headers.get("x-forwarded-proto") ?? "http";
   if (host) return `${proto}://${host}`;
   return "http://localhost:3000";
+}
+
+function buildReturnUrl(baseReturnUrl: string, orderId: string): string {
+  const url = new URL(baseReturnUrl);
+  url.searchParams.set("order_id", orderId);
+  return url.toString();
 }
 
 export async function POST(request: Request) {
@@ -43,80 +46,65 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Пробный период активируется через POST /api/billing/trial/start (без Lava).",
+          "Пробный период активируется через POST /api/billing/trial/start (без ЮKassa).",
       },
       { status: 400 },
     );
   }
 
-  const plan = rawPlan as LavaCheckoutPlan;
-  if (plan !== "monthly" && plan !== "yearly") {
+  if (!isYookassaPlan(rawPlan)) {
     return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
   }
+  const plan: PaidPlanId = rawPlan;
 
-  const lavaEnv = validateLavaBusinessEnv();
-  if (!lavaEnv.ok) {
-    billingLog("checkout_lava_env_invalid", { userId, details: lavaEnv.details }, "error");
+  const yookassaEnv = validateYookassaEnv();
+  if (!yookassaEnv.ok) {
+    billingLog("checkout_yookassa_env_invalid", { userId, details: yookassaEnv.details }, "error");
     return NextResponse.json(
-      { error: lavaEnv.error, code: "lava_env_invalid", details: lavaEnv.details },
+      { error: yookassaEnv.error, code: "yookassa_env_invalid", details: yookassaEnv.details },
       { status: 503 },
     );
   }
 
   const origin = getAppOrigin(request);
   const orderId = `reset_${userId}_${plan}_${Date.now()}`;
-  const hookUrl =
-    process.env.LAVA_HOOK_URL ?? `${origin}/api/webhooks/lava`;
+  const returnUrl = buildReturnUrl(
+    yookassaEnv.returnUrl ?? `${origin}/subscription/success`,
+    orderId,
+  );
 
   billingLog("checkout_start", {
     userId,
     plan,
     orderId,
-    hookUrl,
-    lavaApiHost: new URL(lavaEnv.apiBase).host,
-    shopIdPrefix: lavaEnv.shopId.slice(0, 8),
+    returnUrl,
+    provider: "yookassa",
+    yookassaApiHost: new URL(yookassaEnv.apiBase).host,
+    shopIdPrefix: yookassaEnv.shopId.slice(0, 8),
   });
 
-  const lava = await createLavaCheckoutInvoice({
-    shopId: lavaEnv.shopId,
-    apiKey: lavaEnv.apiKey,
+  const payment = await createYookassaPayment({
+    shopId: yookassaEnv.shopId,
+    secretKey: yookassaEnv.secretKey,
+    apiBase: yookassaEnv.apiBase,
     orderId,
     plan,
     userId,
-    successUrl: `${origin}/?billing=success`,
-    failUrl: `${origin}/?billing=cancelled`,
-    hookUrl,
+    returnUrl,
   });
 
-  if (!lava.ok) {
-    billingLog("checkout_lava_failed", { userId, plan, orderId, error: lava.error, details: lava.details }, "error");
-    return NextResponse.json(
-      {
-        error: lava.error,
-        code: "lava_invoice_failed",
-        details: lava.details ?? null,
-      },
-      { status: 502 },
-    );
-  }
-
-  if (!lava.checkoutUrl?.startsWith("https://")) {
+  if (!payment.ok) {
     billingLog(
-      "checkout_missing_url",
-      { userId, orderId, invoiceId: lava.invoiceId, resolvedFrom: lava.resolvedFrom },
+      "checkout_yookassa_failed",
+      { userId, plan, orderId, error: payment.error, details: payment.details },
       "error",
     );
     return NextResponse.json(
       {
-        error: "Lava checkout URL missing or invalid after invoice create",
-        code: "checkout_url_missing",
-        details: {
-          invoiceId: lava.invoiceId,
-          resolvedFrom: lava.resolvedFrom,
-          hint: "Expected https://pay.lava.ru/invoice/{id} or data.url from Lava",
-        },
+        error: "Не удалось создать оплату. Попробуйте ещё раз.",
+        code: "yookassa_payment_failed",
       },
-      { status: 500 },
+      { status: 502 },
     );
   }
 
@@ -127,12 +115,19 @@ export async function POST(request: Request) {
     .from("payments")
     .insert({
       user_id: userId,
-      provider: "lava",
-      provider_invoice_id: lava.invoiceId,
+      provider: "yookassa",
+      provider_invoice_id: payment.paymentId,
       amount: amountKopecks,
       currency: "RUB",
       status: "pending",
-      metadata: { plan, orderId, userId },
+      metadata: {
+        plan,
+        orderId,
+        order_id: orderId,
+        userId,
+        user_id: userId,
+        yookassa_payment_id: payment.paymentId,
+      },
     })
     .select("id")
     .single();
@@ -140,7 +135,7 @@ export async function POST(request: Request) {
   if (insertError) {
     billingLog(
       "checkout_pending_payment_insert_failed",
-      { userId, invoiceId: lava.invoiceId, error: insertError.message },
+      { userId, paymentId: payment.paymentId, error: insertError.message },
       "error",
     );
     return NextResponse.json({ error: insertError.message }, { status: 500 });
@@ -150,8 +145,8 @@ export async function POST(request: Request) {
     userId,
     plan,
     orderId,
-    invoiceId: lava.invoiceId,
-    paymentId: inserted.id,
+    yookassaPaymentId: payment.paymentId,
+    dbPaymentId: inserted.id,
     amountKopecks,
   });
 
@@ -159,34 +154,18 @@ export async function POST(request: Request) {
     userId,
     plan,
     orderId,
-    invoiceId: lava.invoiceId,
-    checkoutUrl: lava.checkoutUrl,
-    resolvedFrom: lava.resolvedFrom,
+    yookassaPaymentId: payment.paymentId,
   });
-
-  const showDebug =
-    process.env.CHECKOUT_DEBUG_RESPONSE === "1" || process.env.NODE_ENV === "development";
 
   return NextResponse.json({
     ok: true,
-    checkout_url: lava.checkoutUrl,
-    invoice_id: lava.invoiceId,
+    confirmation_url: payment.confirmationUrl,
+    payment_id: payment.paymentId,
     order_id: orderId,
     plan,
     amount: amountKopecks,
     currency: "RUB",
-    resolved_from: lava.resolvedFrom,
-    ...(showDebug
-      ? {
-          checkout_debug: {
-            ...lava.lavaDebug,
-            successUrl: `${origin}/?billing=success`,
-            failUrl: `${origin}/?billing=cancelled`,
-            hookUrl,
-            shopId: lavaEnv.shopId,
-            sumRub: PLAN_AMOUNTS_RUB[plan],
-          },
-        }
-      : {}),
+    return_url: returnUrl,
+    sum_rub: PLAN_AMOUNTS_RUB[plan],
   });
 }

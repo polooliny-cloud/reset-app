@@ -6,7 +6,7 @@ alter table public.profiles add column if not exists updated_at timestamptz defa
 create table if not exists public.subscriptions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  provider text not null default 'lava',
+  provider text not null default 'yookassa',
   plan text not null,
   status text not null,
   started_at timestamptz not null default now(),
@@ -20,13 +20,13 @@ create table if not exists public.subscriptions (
   constraint subscriptions_plan_check check (
     plan in ('monthly', 'yearly', 'lifetime', 'free_trial')
   ),
-  constraint subscriptions_provider_check check (provider in ('lava'))
+  constraint subscriptions_provider_check check (provider in ('yookassa'))
 );
 
 create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  provider text not null default 'lava',
+  provider text not null default 'yookassa',
   provider_invoice_id text not null,
   amount integer not null,
   currency text not null default 'RUB',
@@ -34,7 +34,7 @@ create table if not exists public.payments (
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   constraint payments_status_check check (status in ('pending', 'paid', 'failed')),
-  constraint payments_provider_check check (provider in ('lava'))
+  constraint payments_provider_check check (provider in ('yookassa'))
 );
 
 create unique index if not exists payments_provider_invoice_uidx

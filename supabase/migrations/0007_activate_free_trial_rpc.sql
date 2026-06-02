@@ -5,7 +5,7 @@ alter table public.subscriptions drop constraint if exists subscriptions_provide
 
 alter table public.subscriptions
   add constraint subscriptions_provider_check
-  check (provider in ('lava', 'internal'));
+  check (provider in ('yookassa', 'internal'));
 
 create or replace function public.activate_free_trial(
   p_user_id uuid,

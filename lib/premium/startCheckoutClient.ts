@@ -1,34 +1,25 @@
-import type { LavaCheckoutPlan } from "@/lib/billing/lava/types";
+import type { PaidPlanId } from "@/lib/billing/planPrices";
 
 import { getBillingAccessToken } from "./billingAuth";
 
 export type CheckoutClientDebug = {
-  resolved_from?: string;
-  statusCheck?: boolean | null;
-  apiStatus?: unknown;
-  invoiceStatus?: unknown;
-  httpStatus?: number;
-  successUrl?: string;
-  failUrl?: string;
-  hookUrl?: string;
-  shopId?: string;
   sumRub?: number;
+  returnUrl?: string;
 };
 
 export type StartCheckoutClientResult =
   | {
       ok: true;
-      checkoutUrl: string;
-      invoiceId?: string;
+      confirmationUrl: string;
+      paymentId?: string;
       orderId?: string;
-      resolvedFrom?: string;
       debug?: CheckoutClientDebug;
     }
   | { ok: false; error: string; details?: Record<string, unknown> | null };
 
-/** Paid subscription checkout via Lava — not used for free trial. */
+/** Paid subscription checkout via YooKassa — not used for free trial. */
 export async function startCheckoutClient(
-  plan: LavaCheckoutPlan,
+  plan: PaidPlanId,
 ): Promise<StartCheckoutClientResult> {
   const token = await getBillingAccessToken();
   if (!token) return { ok: false, error: "Нужна авторизация" };
@@ -46,11 +37,11 @@ export async function startCheckoutClient(
     error?: string;
     code?: string;
     details?: Record<string, unknown> | null;
-    checkout_url?: string;
-    invoice_id?: string;
+    confirmation_url?: string;
+    payment_id?: string;
     order_id?: string;
-    resolved_from?: string;
-    checkout_debug?: CheckoutClientDebug;
+    return_url?: string;
+    sum_rub?: number;
   };
 
   if (!res.ok) {
@@ -65,38 +56,37 @@ export async function startCheckoutClient(
     };
   }
 
-  const checkoutUrl = data.checkout_url?.trim();
-  if (!checkoutUrl) {
+  const confirmationUrl = data.confirmation_url?.trim();
+  if (!confirmationUrl) {
     return {
       ok: false,
-      error: "Сервер не вернул checkout_url",
-      details: data.details ?? { code: data.code, invoice_id: data.invoice_id },
+      error: "Сервер не вернул confirmation_url",
+      details: data.details ?? { code: data.code, payment_id: data.payment_id },
     };
   }
 
   try {
-    const parsed = new URL(checkoutUrl);
+    const parsed = new URL(confirmationUrl);
     if (parsed.protocol !== "https:") {
       return {
         ok: false,
-        error: "Некорректный checkout URL (требуется HTTPS)",
-        details: { checkout_url: checkoutUrl },
+        error: "Некорректный confirmation URL (требуется HTTPS)",
+        details: { confirmation_url: confirmationUrl },
       };
     }
   } catch {
     return {
       ok: false,
-      error: "Некорректный checkout URL",
-      details: { checkout_url: checkoutUrl },
+      error: "Некорректный confirmation URL",
+      details: { confirmation_url: confirmationUrl },
     };
   }
 
   return {
     ok: true,
-    checkoutUrl,
-    invoiceId: data.invoice_id,
+    confirmationUrl,
+    paymentId: data.payment_id,
     orderId: data.order_id,
-    resolvedFrom: data.resolved_from,
-    debug: data.checkout_debug,
+    debug: { returnUrl: data.return_url, sumRub: data.sum_rub },
   };
 }

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { billingLog } from "@/lib/billing/log";
-import type { SubscriptionPlan } from "@/lib/billing/types";
+import type { BillingProvider, SubscriptionPlan } from "@/lib/billing/types";
 import { PLAN_DURATION_DAYS } from "@/lib/billing/types";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -20,95 +20,59 @@ export async function activatePaidSubscription(
   input: {
     userId: string;
     plan: Exclude<SubscriptionPlan, "free_trial">;
+    provider?: Exclude<BillingProvider, "internal">;
     providerInvoiceId: string;
     amount: number;
     currency: string;
     metadata?: Record<string, unknown>;
   },
 ): Promise<{ ok: true; duplicate?: boolean } | { ok: false; error: string }> {
-  const { data: existingPayment } = await admin
-    .from("payments")
-    .select("id, status")
-    .eq("provider", "lava")
-    .eq("provider_invoice_id", input.providerInvoiceId)
-    .maybeSingle();
+  const provider = input.provider ?? "yookassa";
+  const { data, error } = await admin.rpc("activate_paid_subscription_atomic", {
+    p_provider: provider,
+    p_provider_invoice_id: input.providerInvoiceId,
+    p_user_id: input.userId,
+    p_plan: input.plan,
+    p_amount: input.amount,
+    p_currency: input.currency,
+    p_metadata: (input.metadata ?? {}) as Database["public"]["Functions"]["activate_paid_subscription_atomic"]["Args"]["p_metadata"],
+  });
 
-  if (existingPayment?.status === "paid") {
+  if (error) {
+    billingLog("paid_activation_rpc_failed", { provider, error: error.message }, "error");
+    return { ok: false, error: error.message };
+  }
+
+  const result = (data ?? {}) as {
+    ok?: boolean;
+    duplicate?: boolean;
+    error?: string;
+    code?: string;
+    premium_until?: string;
+  };
+
+  if (result.duplicate) {
     billingLog("payment_duplicate", {
       userId: input.userId,
+      provider,
       providerInvoiceId: input.providerInvoiceId,
     });
     return { ok: true, duplicate: true };
   }
 
-  const now = new Date();
-  const nowIso = now.toISOString();
-  const premiumUntil = resolvePremiumUntil(input.plan, now) ?? addDaysIso(now, 30);
-  const expiresAt = premiumUntil;
-
-  const paymentPayload = {
-    user_id: input.userId,
-    provider: "lava" as const,
-    provider_invoice_id: input.providerInvoiceId,
-    amount: input.amount,
-    currency: input.currency,
-    status: "paid" as const,
-    metadata: (input.metadata ?? {}) as Database["public"]["Tables"]["payments"]["Insert"]["metadata"],
-  };
-
-  const { error: paymentError } = existingPayment
-    ? await admin.from("payments").update(paymentPayload).eq("id", existingPayment.id)
-    : await admin.from("payments").insert(paymentPayload);
-
-  if (paymentError) {
-    billingLog("payment_upsert_failed", { error: paymentError.message }, "error");
-    return { ok: false, error: paymentError.message };
-  }
-
-  billingLog("payment_upsert_ok", {
-    userId: input.userId,
-    providerInvoiceId: input.providerInvoiceId,
-    status: "paid",
-  });
-
-  const { error: subError } = await admin.from("subscriptions").insert({
-    user_id: input.userId,
-    provider: "lava",
-    plan: input.plan,
-    status: "active",
-    started_at: nowIso,
-    expires_at: expiresAt,
-    updated_at: nowIso,
-  });
-
-  if (subError) {
-    billingLog("subscription_insert_failed", { error: subError.message }, "error");
-    return { ok: false, error: subError.message };
-  }
-
-  billingLog("subscription_insert_ok", {
-    userId: input.userId,
-    plan: input.plan,
-    expiresAt,
-  });
-
-  const { error: profileError } = await admin
-    .from("profiles")
-    .update({
-      premium_until: premiumUntil,
-      updated_at: nowIso,
-    })
-    .eq("id", input.userId);
-
-  if (profileError) {
-    billingLog("profile_premium_update_failed", { error: profileError.message }, "error");
-    return { ok: false, error: profileError.message };
+  if (!result.ok) {
+    billingLog(
+      "paid_activation_rejected",
+      { provider, code: result.code ?? "unknown", error: result.error ?? "unknown" },
+      "error",
+    );
+    return { ok: false, error: result.error ?? "Payment activation rejected" };
   }
 
   billingLog("premium_activated", {
     userId: input.userId,
     plan: input.plan,
-    premiumUntil,
+    premiumUntil: result.premium_until ?? null,
     providerInvoiceId: input.providerInvoiceId,
   });
 

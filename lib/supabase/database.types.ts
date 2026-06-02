@@ -170,6 +170,18 @@ export interface Database {
         };
         Returns: Json;
       };
+      activate_paid_subscription_atomic: {
+        Args: {
+          p_provider: string;
+          p_provider_invoice_id: string;
+          p_user_id: string;
+          p_plan: string;
+          p_amount: number;
+          p_currency: string;
+          p_metadata?: Json;
+        };
+        Returns: Json;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

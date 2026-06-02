@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
-/** Supabase-only trial activation. Must never import lib/billing/lava/* or checkout. */
+/** Supabase-only trial activation. Must never call paid checkout or webhooks. */
 export async function POST(request: Request) {
   const userId = await getUserIdFromRequest(request);
   if (!userId) {

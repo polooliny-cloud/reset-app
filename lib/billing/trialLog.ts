@@ -1,6 +1,6 @@
 type TrialLogLevel = "info" | "warn" | "error";
 
-/** Trial-only logs — never used by paid Lava checkout flow. */
+/** Trial-only logs — never used by paid checkout flow. */
 export function trialLog(
   event: string,
   data?: Record<string, unknown>,

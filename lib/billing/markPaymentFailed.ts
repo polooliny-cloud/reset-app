@@ -1,17 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { billingLog } from "@/lib/billing/log";
+import type { BillingProvider } from "@/lib/billing/types";
 import type { Database } from "@/lib/supabase/database.types";
 
 export async function markPaymentFailedByInvoice(
   admin: SupabaseClient<Database>,
   providerInvoiceId: string,
   metadata?: Record<string, unknown>,
+  provider: Exclude<BillingProvider, "internal"> = "yookassa",
 ): Promise<void> {
   const { data: payment, error: fetchError } = await admin
     .from("payments")
     .select("id, status")
-    .eq("provider", "lava")
+    .eq("provider", provider)
     .eq("provider_invoice_id", providerInvoiceId)
     .maybeSingle();
 
@@ -20,7 +22,7 @@ export async function markPaymentFailedByInvoice(
     return;
   }
 
-  if (!payment || payment.status === "paid") {
+  if (!payment || payment.status !== "pending") {
     return;
   }
 
@@ -30,7 +32,8 @@ export async function markPaymentFailedByInvoice(
       status: "failed",
       metadata: metadata as Database["public"]["Tables"]["payments"]["Update"]["metadata"],
     })
-    .eq("id", payment.id);
+    .eq("id", payment.id)
+    .eq("status", "pending");
 
   billingLog("payment_marked_failed", {
     providerInvoiceId,

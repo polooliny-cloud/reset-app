@@ -1,40 +1,36 @@
 # Billing E2E Verification Checklist
 
-Пройдите перед релизом monetization. Все проверки идут через **реальный billing lifecycle** (Supabase + Lava), без localStorage premium.
+Пройдите перед релизом monetization. Все проверки идут через **реальный billing lifecycle** (Supabase + ЮKassa), без localStorage premium.
 
 ## Подготовка
 
-- [ ] `LAVA_API_KEY`, `LAVA_SHOP_ID`, `LAVA_WEBHOOK_SECRET` заданы в env
+- [ ] `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`, `YOOKASSA_RETURN_URL`, `YOOKASSA_WEBHOOK_SECRET` заданы в env
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` задан (webhook + checkout DB writes)
-- [ ] Webhook URL в Lava: `https://<domain>/api/webhooks/lava`
-- [ ] `NEXT_PUBLIC_APP_URL` указывает на публичный URL (для success/fail redirect)
-- [ ] Миграции `0004`, `0005` применены в Supabase
+- [ ] Webhook URL в ЮKassa: `https://<domain>/api/webhooks/yookassa?secret=<YOOKASSA_WEBHOOK_SECRET>`
+- [ ] `NEXT_PUBLIC_APP_URL` указывает на публичный URL
+- [ ] Миграции `0004`-`0008` применены в Supabase
 - [ ] Локально: `npm run dev`, авторизованный пользователь
 
 ## 1. Checkout creation
 
-- [ ] `/subscription` → «Оформить подписку» → редирект на Lava (`checkout_url`)
-- [ ] Редирект только через `window.location.href` (не `window.open`)
-- [ ] Debug перед редиректом: `/subscription?checkout_debug=1` или `NEXT_PUBLIC_CHECKOUT_DEBUG=1` (в dev включено по умолчанию)
+- [ ] `/subscription` → «Оформить подписку» → modal/sheet → «Перейти к оплате»
+- [ ] Редирект только на `confirmation_url` ЮKassa (HTTPS)
 - [ ] В логах сервера:
-  - [ ] `checkout_start` (shopId, hookUrl, successUrl, failUrl)
-  - [ ] `lava_invoice_request` → `POST https://api.lava.ru/business/invoice/create`
-  - [ ] `checkout_response_raw` — полный JSON от Lava (`data.url`, `data.id`, `status_check`, `status`)
-  - [ ] `lava_invoice_success` (`checkoutUrl`, `resolvedFrom`: `data.url` или `canonical_pay_lava_ru`)
+  - [ ] `checkout_start`
+  - [ ] `yookassa_payment_request` → `POST https://api.yookassa.ru/v3/payments`
+  - [ ] `yookassa_payment_created`
   - [ ] `checkout_ready` / `checkout_pending_payment_inserted`
-- [ ] Ожидаемый формат URL: `https://pay.lava.ru/invoice/{invoice_uuid}`
-- [ ] Если `data.url` пустой — fallback на canonical `pay.lava.ru`; если URL нет совсем → HTTP 500 `checkout_url_missing`
+- [ ] Ожидаемый формат URL: HTTPS `confirmation_url` из ЮKassa
 - [ ] В Supabase `payments`: строка `status = pending`, корректные `provider_invoice_id`, `metadata.plan`
 
 ## 2. Webhook (реальная оплата)
 
-- [ ] После оплаты в Lava приходит `POST /api/webhooks/lava`
+- [ ] После оплаты в ЮKassa приходит `POST /api/webhooks/yookassa`
 - [ ] В логах:
-  - [ ] `webhook_received`
-  - [ ] `webhook_signature_valid`
-  - [ ] `webhook_activation_start` (userId, invoiceId, plan)
+  - [ ] `yookassa_env_ok`
+  - [ ] `yookassa_activation_success` (userId, paymentId, plan)
   - [ ] `payment_upsert_ok`, `subscription_insert_ok`, `premium_activated`
-- [ ] При неверном секрете: `webhook_signature_invalid` → HTTP 401, premium **не** активируется
+- [ ] При неверном секрете: `yookassa_webhook_secret_invalid` → HTTP 401, premium **не** активируется
 
 ## 3. Premium activation
 
@@ -42,7 +38,7 @@
 - [ ] `subscriptions`: новая строка `status = active`, верный `plan`
 - [ ] `payments.status = paid`
 - [ ] UI: gate/soft-lock снимается, `/subscription` показывает «Premium активен»
-- [ ] `PremiumProvider` после `?billing=success` делает refetch
+- [ ] `/subscription/success` ждёт webhook и polling-ом refetch-ит premium state
 
 ## 4. Persistence
 
@@ -56,12 +52,12 @@
 | Сценарий | Ожидание |
 |----------|----------|
 | Duplicate webhook | `payment_duplicate`, premium не дублируется |
-| Отмена / expire в Lava | `payment_marked_failed`, premium не выдаётся |
+| Отмена в ЮKassa | `payment_marked_failed`, premium не выдаётся |
 | Invalid webhook secret | 401, без активации |
 | Истёкший premium | `isPremium: false`, soft-lock на SOS/миссиях |
-| Lava timeout / network | checkout 502, сообщение об ошибке в UI |
+| ЮKassa timeout / network | checkout 502, сообщение об ошибке в UI |
 | Нет JWT на checkout | 401 Unauthorized |
-| Закрыли страницу оплаты | `?billing=cancelled`, pending payment остаётся, premium нет |
+| Закрыли страницу оплаты | pending payment остаётся, premium нет |
 
 ## 6. Trial flow
 
@@ -79,7 +75,7 @@
 
 Искать в server logs префикс `[billing]` (JSON lines):
 
-- `checkout_*`, `lava_invoice_*`
+- `checkout_*`, `yookassa_*`
 - `webhook_*`, `payment_*`, `subscription_*`, `premium_activated`
 - `payment_duplicate`, `payment_marked_failed`
 
@@ -87,9 +83,9 @@
 
 | Variable | Purpose |
 |----------|---------|
-| `LAVA_API_KEY` | Подпись invoice API |
-| `LAVA_SHOP_ID` | ID магазина |
-| `LAVA_WEBHOOK_SECRET` | Проверка Authorization webhook |
-| `LAVA_HOOK_URL` | Override webhook URL (optional) |
+| `YOOKASSA_SHOP_ID` | ID магазина |
+| `YOOKASSA_SECRET_KEY` | Secret key API ЮKassa |
+| `YOOKASSA_RETURN_URL` | `/subscription/success` URL |
+| `YOOKASSA_WEBHOOK_SECRET` | Секрет webhook URL/header |
 | `ADMIN_EMAILS` | Dev mock/status для admin (comma-separated) |
 | `BILLING_DEV_ALLOW_STAGING` | `true` — dev routes на staging |

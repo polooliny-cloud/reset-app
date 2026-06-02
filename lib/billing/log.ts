@@ -28,11 +28,17 @@ export function billingLog(
   console.log("[billing]", line);
 }
 
-/** Redact signature / secrets from Lava request bodies for logs. */
-export function sanitizeLavaInvoicePayload(
-  body: Record<string, string | number>,
-): Record<string, string | number> {
-  const { shopId, orderId, sum, customFields, successUrl, failUrl, hookUrl, expire, comment } =
-    body;
-  return { shopId, orderId, sum, customFields, successUrl, failUrl, hookUrl, expire, comment };
+/** Keep payment creation logs useful without leaking secrets or full API responses. */
+export function sanitizeYookassaPaymentPayload(
+  body: Record<string, unknown>,
+): Record<string, unknown> {
+  const { amount, capture, confirmation, description, metadata } = body;
+  const safeConfirmation =
+    typeof confirmation === "object" && confirmation
+      ? {
+          type: (confirmation as { type?: unknown }).type,
+          return_url: (confirmation as { return_url?: unknown }).return_url,
+        }
+      : null;
+  return { amount, capture, confirmation: safeConfirmation, description, metadata };
 }
