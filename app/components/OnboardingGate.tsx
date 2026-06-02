@@ -32,8 +32,12 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (authInitializing || !appReady) return;
 
-    setChecked(false);
-    setCheckedPath(null);
+    const markChecked = () => {
+      window.setTimeout(() => {
+        setChecked(true);
+        setCheckedPath(pathname);
+      }, 0);
+    };
 
     if (typeof window !== 'undefined') {
       try {
@@ -54,25 +58,27 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
     }
 
     if (devBypass) {
-      setChecked(true);
-      setCheckedPath(pathname);
+      markChecked();
+      return;
+    }
+
+    if (session?.user && onboardingCompleted) {
+      if (pathname === '/onboarding') {
+        router.replace('/');
+        return;
+      }
+      markChecked();
       return;
     }
 
     if (pathname === '/onboarding') {
-      if (session?.user && onboardingCompleted) {
-        router.replace('/');
-        return;
-      }
-      setChecked(true);
-      setCheckedPath(pathname);
+      markChecked();
       return;
     }
 
     if (!session?.user) {
       if (isPublicPath(pathname)) {
-        setChecked(true);
-        setCheckedPath(pathname);
+        markChecked();
         return;
       }
       router.replace('/');
@@ -84,8 +90,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setChecked(true);
-    setCheckedPath(pathname);
+    markChecked();
   }, [
     authInitializing,
     appReady,

@@ -52,6 +52,8 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Reset" />
       </head>
       <body className="flex min-h-full flex-col bg-[#090d14] text-white [color-scheme:dark]">
         <PostHogProvider>

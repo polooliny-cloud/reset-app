@@ -17,11 +17,7 @@ import { markTrialActivationPending } from '@/lib/premium/trialActivationPending
 import { captureEvent } from '@/lib/posthogCapture';
 import { supabase } from '@/lib/supabase';
 
-import {
-  OnboardingOtpPanel,
-  clearOnboardingResumeAfterMagicLink,
-  peekOnboardingResumeAfterMagicLink,
-} from './OnboardingOtpPanel';
+import { OnboardingOtpPanel } from './OnboardingOtpPanel';
 
 type Stage =
   | 'welcome'
@@ -268,7 +264,7 @@ export default function OnboardingPage() {
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [platform, setPlatform] = useState<Platform | null>(null);
   const onboardingCompleteSent = useRef(false);
-  const authResumeHandledRef = useRef(false);
+  const authHandledRef = useRef(false);
   const [authStandalone, setAuthStandalone] = useState(
     () => hasOnboardingPendingAuthSession(),
   );
@@ -277,7 +273,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (!session?.user) {
-      authResumeHandledRef.current = false;
+      authHandledRef.current = false;
     }
   }, [session?.user]);
 
@@ -289,54 +285,34 @@ export default function OnboardingPage() {
       return;
     }
     if (hasOnboardingPendingAuthSession()) {
-      setAuthStandalone(true);
-      setStage((prev) => (prev === 'welcome' ? 'authRegister' : prev));
+      window.setTimeout(() => {
+        setAuthStandalone(true);
+        setStage((prev) => (prev === 'welcome' ? 'authRegister' : prev));
+      }, 0);
     }
   }, [appReady, initializing, session?.user]);
 
   useEffect(() => {
     if (!session?.user) return;
-    if (authResumeHandledRef.current) return;
-
-    const resume = peekOnboardingResumeAfterMagicLink();
+    if (authHandledRef.current) return;
     const onAuthStage = stage === 'authRegister' || stage === 'authLogin';
+    if (!onAuthStage) return;
 
-    if (resume === 'home' || (onboardingCompleted && onAuthStage)) {
-      authResumeHandledRef.current = true;
-      clearOnboardingResumeAfterMagicLink();
-      clearOnboardingPendingAuthSession();
-      captureEvent('auth_success');
+    authHandledRef.current = true;
+    clearOnboardingPendingAuthSession();
 
-      if (!onboardingCompleted) {
+    if (!onboardingCompleted) {
+      window.setTimeout(() => {
         setStage('question');
         setQuestionIndex(0);
-        return;
-      }
-
-      void refetchPremium().then((premium) => {
-        if (premium?.isPremium) {
-          router.replace('/');
-        } else {
-          setStage('install');
-        }
-      });
+      }, 0);
       return;
     }
 
-    if (resume !== 'question') return;
-
-    authResumeHandledRef.current = true;
-    clearOnboardingResumeAfterMagicLink();
-    captureEvent('auth_success');
-    setStage('question');
-    setQuestionIndex(0);
-  }, [session?.user?.id, router, stage, onboardingCompleted]);
-
-  useEffect(() => {
-    if (stage === 'welcome' && !session?.user) {
-      clearOnboardingResumeAfterMagicLink();
-    }
-  }, [stage, session?.user]);
+    void refetchPremium().finally(() => {
+      router.replace('/');
+    });
+  }, [session?.user, session?.user?.id, router, stage, onboardingCompleted, refetchPremium]);
 
   useEffect(() => {
     if (stage !== 'question') return;
@@ -404,7 +380,6 @@ export default function OnboardingPage() {
         alreadySent =
           alreadySent || localStorage.getItem(ONBOARDING_EVENT_DONE_KEY) === 'true';
         localStorage.setItem(ONBOARDING_EVENT_DONE_KEY, 'true');
-        clearOnboardingResumeAfterMagicLink();
       } catch {
         // ignore
       }
@@ -763,7 +738,6 @@ export default function OnboardingPage() {
                 type="button"
                 onClick={() => {
                   if (session?.user) {
-                    clearOnboardingResumeAfterMagicLink();
                     setStage('question');
                     setQuestionIndex(0);
                     return;
@@ -782,7 +756,6 @@ export default function OnboardingPage() {
         {stage === 'authRegister' ? (
           <OnboardingOtpPanel
             mode="register"
-            magicLinkResume={onboardingCompleted || authStandalone ? 'home' : 'question'}
             hideBack={authStandalone && !!session?.user}
             onSwitchToLogin={() => {
               captureEvent('auth_screen_viewed', { mode: 'login' });
@@ -796,7 +769,6 @@ export default function OnboardingPage() {
         {stage === 'authLogin' ? (
           <OnboardingOtpPanel
             mode="login"
-            magicLinkResume={onboardingCompleted || authStandalone ? 'home' : 'question'}
             hideBack={authStandalone && !!session?.user}
             onSwitchToLogin={() => setStage('authLogin')}
             onSwitchToRegister={() => {

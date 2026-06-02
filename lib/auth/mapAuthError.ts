@@ -15,13 +15,13 @@ export type MappedAuthError = {
 };
 
 export const AUTH_MESSAGES = {
-  cooldown: "Подождите немного перед повторной отправкой письма",
+  cooldown: "Подождите немного перед повторной отправкой кода",
   rateLimit: "Слишком много попыток. Попробуйте позже",
   invalidEmail: "Введите корректную почту",
   network: "Нет подключения к интернету. Проверьте сеть и попробуйте снова",
-  generic: "Не удалось отправить письмо. Попробуйте позже",
+  generic: "Не удалось отправить код. Попробуйте позже",
   emptyEmail: "Введите email.",
-  linkInvalid: "Ссылка устарела или недействительна. Запросите новое письмо.",
+  linkInvalid: "Код устарел или недействителен. Запросите новый.",
   alreadyRegistered: "Этот email уже зарегистрирован. Используйте вход.",
 } as const;
 
@@ -130,7 +130,7 @@ export function mapAuthError(error: AuthError | null | undefined): MappedAuthErr
   }
   if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
     return {
-      message: "Подтвердите email по ссылке из письма.",
+      message: "Подтвердите email кодом из письма.",
       kind: "generic",
     };
   }

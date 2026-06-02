@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { DEFAULT_OTP_COOLDOWN_SECONDS } from "@/lib/auth/mapAuthError";
 import { OTP_MESSAGES } from "@/lib/auth/mapOtpError";
@@ -15,46 +15,24 @@ import {
 } from "@/lib/auth/otpCooldownStorage";
 import { useAuth } from "@/lib/auth/useAuth";
 import { isValidEmail } from "@/lib/auth/validateEmail";
-import { openEmailApp } from "@/lib/openEmailApp";
 import { captureEvent } from "@/lib/posthogCapture";
 
 import { OnboardingOtpBackButton } from "./OnboardingOtpBackButton";
 import { OnboardingOtpForm } from "./OnboardingOtpForm";
 import { OnboardingOtpSuccess } from "./OnboardingOtpSuccess";
 
-const RESUME_AFTER_AUTH_KEY = "onboarding_resume_after_magic_link";
-
-export type MagicLinkResumeTarget = "home" | "question";
-
-/** After magic link: `home` → main app; `question` → onboarding questions. */
-export function setOnboardingResumeAfterMagicLink(target: MagicLinkResumeTarget) {
-  if (typeof window === "undefined") return;
-  try {
-    window.sessionStorage.setItem(RESUME_AFTER_AUTH_KEY, target);
-  } catch {
-    // ignore
-  }
-}
-
-export function clearOnboardingResumeAfterMagicLink() {
-  if (typeof window === "undefined") return;
-  try {
-    window.sessionStorage.removeItem(RESUME_AFTER_AUTH_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-export function peekOnboardingResumeAfterMagicLink(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.sessionStorage.getItem(RESUME_AFTER_AUTH_KEY);
-  } catch {
-    return null;
-  }
-}
-
 type AuthStep = OtpAuthStep;
+
+function getInitialOtpState(): {
+  step: AuthStep;
+  email: string;
+  cooldownSec: number;
+} {
+  const email = getOtpSentEmail() ?? "";
+  const cooldownSec = getOtpCooldownRemainingSec();
+  const step = getOtpAuthStep() === "code" && email ? "code" : "form";
+  return { step, email, cooldownSec };
+}
 
 type Props = {
   mode: "register" | "login";
@@ -62,7 +40,7 @@ type Props = {
   onSwitchToRegister: () => void;
   onBack: () => void;
   hideBack?: boolean;
-  magicLinkResume: MagicLinkResumeTarget;
+  onVerified?: () => void;
 };
 
 export function OnboardingOtpPanel({
@@ -71,36 +49,18 @@ export function OnboardingOtpPanel({
   onSwitchToRegister,
   onBack,
   hideBack = false,
-  magicLinkResume,
+  onVerified,
 }: Props) {
-  const { signInWithOtp } = useAuth();
-  const [step, setStep] = useState<AuthStep>("form");
-  const [email, setEmail] = useState("");
+  const { signInWithOtp, verifyOtpCode } = useAuth();
+  const [initialOtpState] = useState(getInitialOtpState);
+  const [step, setStep] = useState<AuthStep>(initialOtpState.step);
+  const [email, setEmail] = useState(initialOtpState.email);
+  const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
-  const [cooldownSec, setCooldownSec] = useState(0);
-
-  const restoreFromStorage = useCallback(() => {
-    const storedStep = getOtpAuthStep();
-    const storedEmail = getOtpSentEmail();
-    const remaining = getOtpCooldownRemainingSec();
-
-    if (storedEmail) {
-      setEmail(storedEmail);
-    }
-    if (remaining > 0) {
-      setCooldownSec(remaining);
-    }
-    if (storedStep === "success" && storedEmail) {
-      setStep("success");
-    }
-  }, []);
-
-  useEffect(() => {
-    restoreFromStorage();
-  }, [restoreFromStorage]);
+  const [cooldownSec, setCooldownSec] = useState(initialOtpState.cooldownSec);
 
   useEffect(() => {
     if (cooldownSec <= 0) return;
@@ -110,16 +70,16 @@ export function OnboardingOtpPanel({
     return () => window.clearInterval(id);
   }, [cooldownSec]);
 
-  function goToSuccess(emailValue: string, cooldownSeconds: number, infoMessage?: string) {
+  function showCodeStep(emailValue: string, cooldownSeconds: number) {
     const sec = Math.max(1, Math.floor(cooldownSeconds));
     setEmail(emailValue);
+    setCode("");
     setError(null);
-    setInfo(infoMessage ?? null);
     setSubmitting(false);
     setResending(false);
     persistOtpSent(emailValue, sec);
     setCooldownSec(sec);
-    setStep("success");
+    setStep("code");
   }
 
   async function sendOtp(emailValue: string, isResend: boolean) {
@@ -129,66 +89,77 @@ export function OnboardingOtpPanel({
       return;
     }
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
-      if (step === "success") {
-        setInfo(OTP_MESSAGES.network);
-        setError(null);
-      } else {
-        setError(OTP_MESSAGES.network);
-      }
+      setError(OTP_MESSAGES.network);
       return;
     }
-    if (cooldownSec > 0) return;
+    if (cooldownSec > 0 && isResend) return;
+    if (submitting || resending || verifying) return;
 
     if (isResend) {
       setResending(true);
     } else {
       setSubmitting(true);
-      if (mode === "register") {
-        captureEvent("auth_register_clicked");
-      } else {
-        captureEvent("auth_login_clicked");
-      }
+      captureEvent(mode === "register" ? "auth_register_clicked" : "auth_login_clicked");
     }
 
     setError(null);
 
     const result = await signInWithOtp(trimmed, mode, {
-      emailAlreadySent: step === "success",
+      emailAlreadySent: step === "code",
     });
 
     if (result.ok) {
-      if (!result.treatAsSuccess) {
-        setOnboardingResumeAfterMagicLink(magicLinkResume);
-        captureEvent("magic_link_requested", { mode });
-      }
-      goToSuccess(
+      captureEvent("otp_code_requested", { mode, resend: isResend });
+      showCodeStep(
         trimmed,
         result.cooldownSeconds ?? DEFAULT_OTP_COOLDOWN_SECONDS,
-        result.treatAsSuccess ? OTP_MESSAGES.alreadySentCheck : undefined,
       );
       return;
     }
 
     setSubmitting(false);
     setResending(false);
-    const message = result.error ?? OTP_MESSAGES.generic;
-    if (step === "success") {
-      setInfo(message);
-      setError(null);
-    } else {
-      setError(message);
-    }
+    setError(result.error ?? OTP_MESSAGES.generic);
   }
 
-  function handleOpenGmail() {
-    openEmailApp();
+  async function verifyCode() {
+    if (verifying) return;
+
+    const normalized = code.replace(/\D/g, "");
+    if (!normalized) {
+      setError(OTP_MESSAGES.emptyCode);
+      return;
+    }
+    if (normalized.length < 6) {
+      setError(OTP_MESSAGES.incompleteCode);
+      return;
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setError(OTP_MESSAGES.network);
+      return;
+    }
+
+    setVerifying(true);
+    setError(null);
+
+    const result = await verifyOtpCode(email, normalized);
+
+    setVerifying(false);
+
+    if (!result.ok) {
+      setError(result.error ?? OTP_MESSAGES.invalidCode);
+      return;
+    }
+
+    captureEvent("auth_success");
+    clearOtpCooldownStorage();
+    onVerified?.();
   }
 
   function resetToForm() {
     setStep("form");
+    setCode("");
     setError(null);
-    setInfo(null);
-    clearOnboardingResumeAfterMagicLink();
     clearOtpCooldownStorage();
     setCooldownSec(0);
   }
@@ -204,7 +175,7 @@ export function OnboardingOtpPanel({
   }
 
   const topPadding =
-    step === "success"
+    step === "code"
       ? "pt-[calc(72px+env(safe-area-inset-top))]"
       : hideBack
         ? "pt-[calc(20px+env(safe-area-inset-top))]"
@@ -213,7 +184,7 @@ export function OnboardingOtpPanel({
   return (
     <>
       {step === "form" && !hideBack ? <OnboardingOtpBackButton onClick={onBack} /> : null}
-      {step === "success" ? <OnboardingOtpBackButton onClick={() => resetToForm()} /> : null}
+      {step === "code" ? <OnboardingOtpBackButton onClick={() => resetToForm()} /> : null}
       <div
         className={`mx-auto flex w-full max-w-md flex-1 flex-col px-2 pb-[calc(16px+env(safe-area-inset-bottom))] ${topPadding}`}
       >
@@ -230,11 +201,17 @@ export function OnboardingOtpPanel({
         ) : (
           <OnboardingOtpSuccess
             email={email}
+            code={code}
             cooldownSec={cooldownSec}
-            infoMessage={info}
+            error={error}
+            verifying={verifying}
             resending={resending}
-            onOpenGmail={handleOpenGmail}
-            onResend={() => sendOtp(email, true)}
+            onCodeChange={(value) => {
+              setCode(value);
+              if (error) setError(null);
+            }}
+            onVerify={() => void verifyCode()}
+            onResend={() => void sendOtp(email, true)}
           />
         )}
       </div>

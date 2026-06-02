@@ -105,7 +105,7 @@ export function OnboardingOtpForm({
               : "cursor-not-allowed border-slate-400/20 bg-slate-900/60 text-white/45 hover:brightness-100"
           }`}
         >
-          {submitting ? "Отправка…" : "Получить письмо"}
+          {submitting ? "Отправка…" : "Получить код"}
         </button>
       </form>
 

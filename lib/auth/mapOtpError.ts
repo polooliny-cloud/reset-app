@@ -3,12 +3,17 @@ import type { AuthError } from "@supabase/supabase-js";
 import { DEFAULT_OTP_COOLDOWN_SECONDS, parseCooldownSeconds } from "@/lib/auth/mapAuthError";
 
 export const OTP_MESSAGES = {
-  alreadySentWait: "Письмо уже отправлено. Подождите немного.",
-  alreadySentCheck: "Письмо уже отправлено. Проверьте почту.",
+  alreadySentWait: "Код уже отправлен. Подождите немного.",
+  alreadySentCheck: "Код уже отправлен. Проверьте почту.",
   invalidEmail: "Введите корректную почту",
   network: "Проблема с интернет-соединением",
-  generic: "Не удалось отправить письмо",
+  generic: "Не удалось отправить код",
   emptyEmail: "Введите email.",
+  emptyCode: "Введите код",
+  incompleteCode: "Введите 6 цифр",
+  invalidCode: "Неверный код",
+  expiredCode: "Код истёк. Запросите новый",
+  tooManyAttempts: "Слишком много попыток. Попробуйте позже",
   successHint: "Не забудьте проверить спам.",
 } as const;
 
@@ -66,7 +71,7 @@ function isInvalidEmailError(error: AuthError): boolean {
 }
 
 /**
- * Maps Supabase OTP / magic-link errors for the auth form.
+ * Maps Supabase OTP sending errors for the auth form.
  * Never returns raw English backend strings.
  */
 export function mapOtpError(
@@ -101,4 +106,54 @@ export function mapOtpError(
   }
 
   return { message: OTP_MESSAGES.generic, kind: "generic", treatAsSuccess: false };
+}
+
+function isExpiredCodeError(error: AuthError): boolean {
+  const msg = error.message?.toLowerCase() ?? "";
+  const code = error.code?.toLowerCase() ?? "";
+  return (
+    code.includes("expired") ||
+    msg.includes("expired") ||
+    msg.includes("otp expired") ||
+    msg.includes("token has expired")
+  );
+}
+
+function isInvalidCodeError(error: AuthError): boolean {
+  const msg = error.message?.toLowerCase() ?? "";
+  const code = error.code?.toLowerCase() ?? "";
+  return (
+    code.includes("otp") ||
+    code.includes("token") ||
+    msg.includes("token is invalid") ||
+    msg.includes("invalid token") ||
+    msg.includes("otp") ||
+    msg.includes("confirmation token")
+  );
+}
+
+export function mapVerifyOtpError(
+  error: AuthError | null | undefined,
+): Pick<MappedOtpError, "message" | "kind"> {
+  if (!error) {
+    return { message: OTP_MESSAGES.invalidCode, kind: "generic" };
+  }
+
+  if (isNetworkError(error)) {
+    return { message: OTP_MESSAGES.network, kind: "network" };
+  }
+
+  if (isRateLimitLike(error)) {
+    return { message: OTP_MESSAGES.tooManyAttempts, kind: "rate_limit" };
+  }
+
+  if (isExpiredCodeError(error)) {
+    return { message: OTP_MESSAGES.expiredCode, kind: "generic" };
+  }
+
+  if (isInvalidCodeError(error)) {
+    return { message: OTP_MESSAGES.invalidCode, kind: "generic" };
+  }
+
+  return { message: OTP_MESSAGES.invalidCode, kind: "generic" };
 }

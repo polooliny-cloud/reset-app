@@ -1,53 +1,136 @@
 "use client";
 
+import { useEffect, useRef, type ChangeEvent, type ClipboardEvent, type FormEvent } from "react";
+
 import { OTP_MESSAGES } from "@/lib/auth/mapOtpError";
 import { formatCooldownSeconds } from "@/lib/auth/otpCooldown";
-import { isStandalonePwa } from "@/lib/auth/isStandalonePwa";
 
 type Props = {
   email: string;
+  code: string;
   cooldownSec: number;
-  infoMessage: string | null;
+  error: string | null;
+  verifying: boolean;
   resending: boolean;
-  onOpenGmail: () => void;
+  onCodeChange: (code: string) => void;
+  onVerify: () => void;
   onResend: () => void;
 };
 
+const OTP_LENGTH = 6;
+
+function normalizeCode(value: string): string {
+  return value.replace(/\D/g, "").slice(0, OTP_LENGTH);
+}
+
 export function OnboardingOtpSuccess({
   email,
+  code,
   cooldownSec,
-  infoMessage,
+  error,
+  verifying,
   resending,
-  onOpenGmail,
+  onCodeChange,
+  onVerify,
   onResend,
 }: Props) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const onCooldown = cooldownSec > 0;
-  const canResend = !onCooldown && !resending;
-  const standalone = isStandalonePwa();
+  const canResend = !onCooldown && !resending && !verifying;
+  const codeComplete = code.length === OTP_LENGTH;
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+    onCodeChange(normalizeCode(event.target.value));
+  }
+
+  function handlePaste(event: ClipboardEvent<HTMLInputElement>) {
+    const pasted = normalizeCode(event.clipboardData.getData("text"));
+    if (!pasted) return;
+    event.preventDefault();
+    onCodeChange(pasted);
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onVerify();
+  }
 
   return (
-    <div className="surface-card animate-onboarding-step px-5 py-7">
+    <form onSubmit={handleSubmit} className="surface-card animate-onboarding-step px-5 py-7">
       <p className="text-center text-sm uppercase tracking-[0.18em] text-white/75">Reset</p>
       <h1 className="text-title text-measure mt-6 text-center text-[1.65rem] font-semibold leading-tight text-white sm:text-[1.85rem]">
-        Проверьте почту
+        Мы отправили код на почту
       </h1>
       <div className="text-body text-measure mt-3 text-center text-[15px] leading-relaxed text-[#9A9AA0]">
-        <p>Мы отправили ссылку для входа на:</p>
-        <p className="mt-2 break-all font-medium text-[#C4C4C9]">{email}</p>
+        <p className="break-all text-sm text-[#9A9AA0]">{email}</p>
       </div>
 
-      {infoMessage ? (
+      <div className="relative mt-8" onClick={() => inputRef.current?.focus()}>
+        <label htmlFor="onb-auth-code" className="sr-only">
+          Код из письма
+        </label>
+        <input
+          ref={inputRef}
+          id="onb-auth-code"
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="[0-9]*"
+          value={code}
+          onChange={handleInputChange}
+          onPaste={handlePaste}
+          disabled={verifying}
+          aria-invalid={!!error}
+          aria-describedby={error ? "onb-auth-code-error" : undefined}
+          className="absolute inset-0 h-full w-full opacity-0"
+        />
+        <div className="grid grid-cols-6 gap-2 sm:gap-3" aria-hidden>
+          {Array.from({ length: OTP_LENGTH }).map((_, index) => {
+            const digit = code[index] ?? "";
+            const active = index === code.length && !codeComplete;
+            return (
+              <div
+                key={index}
+                className={`flex h-[3.25rem] items-center justify-center rounded-2xl border text-xl font-semibold tabular-nums transition duration-150 sm:h-14 ${
+                  error
+                    ? "border-red-300/45 bg-red-500/[0.06] text-red-100"
+                    : active
+                      ? "border-violet-300/55 bg-violet-300/[0.08] text-white shadow-[0_0_24px_rgba(167,139,250,0.10)]"
+                      : "border-white/10 bg-white/[0.04] text-white"
+                }`}
+              >
+                {digit}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {error ? (
         <p
-          className="text-body text-measure mt-4 text-center text-sm leading-snug text-[#C4C4C9]"
-          role="status"
+          id="onb-auth-code-error"
+          className="text-body text-measure mt-4 text-center text-sm leading-snug text-red-300/95"
+          role="alert"
         >
-          {infoMessage}
+          {error}
         </p>
       ) : null}
 
       <div className="mt-8 flex flex-col gap-3">
-        <button type="button" onClick={onOpenGmail} className="primary-cta">
-          Открыть Gmail
+        <button
+          type="submit"
+          disabled={!codeComplete || verifying || resending}
+          className={`primary-cta ${
+            codeComplete && !verifying && !resending
+              ? ""
+              : "cursor-not-allowed border-slate-400/20 bg-slate-900/60 text-white/45 hover:brightness-100"
+          }`}
+        >
+          {verifying ? "Проверяем…" : "Подтвердить"}
         </button>
         <button
           type="button"
@@ -62,23 +145,14 @@ export function OnboardingOtpSuccess({
           {resending
             ? "Отправка…"
             : onCooldown
-              ? `Повторить через ${formatCooldownSeconds(cooldownSec)}`
+              ? `Отправить повторно через ${formatCooldownSeconds(cooldownSec)}`
               : "Отправить ещё раз"}
         </button>
       </div>
 
-      {standalone ? (
-        <p className="text-body text-measure mt-6 text-center text-[14px] leading-relaxed text-[#8C8C92]">
-          Откройте письмо и перейдите по ссылке{" "}
-          <span className="text-[#B8B8BE]">в этом приложении</span> (долгое нажатие на ссылку →
-          «Открыть в Reset»). Если ссылка открылась в Safari или Chrome, войдите там один раз, затем
-          снова откройте Reset с главного экрана.
-        </p>
-      ) : (
-        <p className="text-body text-measure mt-6 text-center text-[14px] leading-relaxed text-[#8C8C92]">
-          {OTP_MESSAGES.successHint}
-        </p>
-      )}
-    </div>
+      <p className="text-body text-measure mt-6 text-center text-[14px] leading-relaxed text-[#8C8C92]">
+        {OTP_MESSAGES.successHint}
+      </p>
+    </form>
   );
 }

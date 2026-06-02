@@ -7,7 +7,6 @@ import { useState } from "react";
 import { PremiumBadge } from "@/app/components/premium/PremiumBadge";
 import { useAuth } from "@/lib/auth/useAuth";
 import { clearOtpCooldownStorage } from "@/lib/auth/otpCooldownStorage";
-import { clearOnboardingResumeAfterMagicLink } from "@/app/onboarding/OnboardingOtpPanel";
 import { clearOnboardingPendingAuthSession } from "@/lib/onboarding";
 import { captureEvent } from "@/lib/posthogCapture";
 
@@ -21,7 +20,6 @@ export default function SettingsPage() {
     try {
       captureEvent("auth_logout");
       clearOtpCooldownStorage();
-      clearOnboardingResumeAfterMagicLink();
       clearOnboardingPendingAuthSession();
       await signOut();
       router.replace("/");

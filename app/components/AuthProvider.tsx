@@ -14,9 +14,12 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 
 import { clearStaleAuthUiState } from "@/lib/auth/clearStaleAuthUiState";
-import { getMagicLinkRedirectUrl } from "@/lib/auth/authRedirectUrl";
 import { migrateLegacyLocalStorageSession } from "@/lib/auth/migrateLegacySession";
-import { mapOtpError, OTP_MESSAGES } from "@/lib/auth/mapOtpError";
+import {
+  mapOtpError,
+  mapVerifyOtpError,
+  OTP_MESSAGES,
+} from "@/lib/auth/mapOtpError";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type AuthOtpIntent = "register" | "login";
@@ -28,16 +31,22 @@ export type SignInWithOtpResult = {
   cooldownSeconds?: number;
 };
 
+export type VerifyOtpResult = {
+  ok: boolean;
+  error: string | null;
+};
+
 export type AuthContextValue = {
   session: Session | null;
   user: User | null;
-  /** True until initial session hydration from cookies / URL completes. */
+  /** True until initial session hydration from persistent storage completes. */
   initializing: boolean;
   signInWithOtp: (
     email: string,
     intent: AuthOtpIntent,
     options?: { emailAlreadySent?: boolean },
   ) => Promise<SignInWithOtpResult>;
+  verifyOtpCode: (email: string, code: string) => Promise<VerifyOtpResult>;
   signOut: () => Promise<void>;
 };
 
@@ -51,16 +60,16 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-const INIT_FALLBACK_MS = 8_000;
+const INIT_FALLBACK_MS = 4_000;
 
-function hasAuthParamsInUrl(): boolean {
-  if (typeof window === "undefined") return false;
-  const url = new URL(window.location.href);
+function AuthLoadingScreen() {
   return (
-    url.searchParams.has("code") ||
-    url.hash.includes("access_token=") ||
-    url.hash.includes("error=") ||
-    url.hash.includes("error_description=")
+    <div className="flex min-h-screen flex-1 items-center justify-center bg-[#090d14]">
+      <div
+        className="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-violet-300"
+        aria-hidden
+      />
+    </div>
   );
 }
 
@@ -83,18 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!nextSession?.user) {
         clearStaleAuthUiState();
       }
-    };
-
-    const waitForUrlSession = async (): Promise<Session | null> => {
-      if (!hasAuthParamsInUrl()) return null;
-
-      const deadline = Date.now() + INIT_FALLBACK_MS;
-      while (mounted && Date.now() < deadline) {
-        const { data: { session: fromUrl } } = await supabase.auth.getSession();
-        if (fromUrl?.user) return fromUrl;
-        await new Promise((resolve) => setTimeout(resolve, 80));
-      }
-      return null;
     };
 
     void (async () => {
@@ -124,20 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           initDoneRef.current = true;
           setInitializing(false);
 
-          if (!nextSession?.user) {
-            clearStaleAuthUiState();
-          }
+          clearStaleAuthUiState();
         }
       });
 
       subscription = sub;
-
-      const urlSession = await waitForUrlSession();
-      if (!mounted) return;
-
-      if (urlSession?.user && !initDoneRef.current) {
-        finishInitializing(urlSession);
-      }
     })();
 
     const fallbackTimer = window.setTimeout(() => {
@@ -176,7 +164,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.signInWithOtp({
           email: trimmed,
           options: {
-            emailRedirectTo: getMagicLinkRedirectUrl("/onboarding"),
             shouldCreateUser: intent === "register",
           },
         });
@@ -193,6 +180,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           };
         }
 
+        return { ok: true, error: null };
+      } catch {
+        return { ok: false, error: OTP_MESSAGES.network };
+      }
+    },
+    [supabase],
+  );
+
+  const verifyOtpCodeCb = useCallback(
+    async (email: string, code: string): Promise<VerifyOtpResult> => {
+      const trimmedEmail = email.trim();
+      const token = code.replace(/\D/g, "");
+
+      if (!trimmedEmail) {
+        return { ok: false, error: OTP_MESSAGES.emptyEmail };
+      }
+
+      if (token.length < 6) {
+        return { ok: false, error: OTP_MESSAGES.incompleteCode };
+      }
+
+      try {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: trimmedEmail,
+          token,
+          type: "email",
+        });
+
+        if (error || !data.session?.user) {
+          return { ok: false, error: mapVerifyOtpError(error).message };
+        }
+
+        clearStaleAuthUiState();
+        setSession(data.session);
+        setInitializing(false);
+        initDoneRef.current = true;
         return { ok: true, error: null };
       } catch {
         return { ok: false, error: OTP_MESSAGES.network };
@@ -218,10 +241,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       initializing,
       signInWithOtp: signInWithOtpCb,
+      verifyOtpCode: verifyOtpCodeCb,
       signOut: signOutCb,
     }),
-    [session, user, initializing, signInWithOtpCb, signOutCb],
+    [session, user, initializing, signInWithOtpCb, verifyOtpCodeCb, signOutCb],
   );
+
+  if (initializing) {
+    return <AuthLoadingScreen />;
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
