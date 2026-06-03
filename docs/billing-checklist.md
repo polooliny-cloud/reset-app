@@ -4,7 +4,7 @@
 
 ## Подготовка
 
-- [ ] `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`, `YOOKASSA_RETURN_URL`, `YOOKASSA_WEBHOOK_SECRET` заданы в env
+- [ ] `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`, `YOOKASSA_WEBHOOK_SECRET` заданы в env
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` задан (webhook + checkout DB writes)
 - [ ] Webhook URL в ЮKassa: `https://<domain>/api/webhooks/yookassa?secret=<YOOKASSA_WEBHOOK_SECRET>`
 - [ ] `NEXT_PUBLIC_APP_URL` указывает на публичный URL
@@ -13,8 +13,9 @@
 
 ## 1. Checkout creation
 
-- [ ] `/subscription` → «Оформить подписку» → modal/sheet → «Перейти к оплате»
+- [ ] `/subscription` → «Оплатить» → прямой переход на ЮKassa
 - [ ] Редирект только на `confirmation_url` ЮKassa (HTTPS)
+- [ ] `return_url` в созданном платеже ведёт на главный экран приложения (`/`), без bridge/polling screen
 - [ ] В логах сервера:
   - [ ] `checkout_start`
   - [ ] `yookassa_payment_request` → `POST https://api.yookassa.ru/v3/payments`
@@ -37,8 +38,8 @@
 - [ ] `profiles.premium_until` обновлён (будущая дата)
 - [ ] `subscriptions`: новая строка `status = active`, верный `plan`
 - [ ] `payments.status = paid`
-- [ ] UI: gate/soft-lock снимается, `/subscription` показывает «Premium активен»
-- [ ] `/subscription/success` ждёт webhook и polling-ом refetch-ит premium state
+- [ ] UI: gate/soft-lock снимается после фонового premium refetch/realtime, `/subscription` показывает активный Reset+
+- [ ] `/subscription/success` не показывает UI и сразу редиректит на главный экран
 
 ## 4. Persistence
 
@@ -69,7 +70,7 @@
 
 - [ ] Реальная оплата минимального тарифа (monthly 299 ₽)
 - [ ] Webhook доходит на staging URL (ngrok / deploy preview)
-- [ ] Полный цикл: checkout → pay → return → premium → reload → re-login
+- [ ] Полный цикл: checkout → pay → return home → webhook activation → reload → re-login
 
 ## Логи для мониторинга
 
@@ -85,7 +86,6 @@
 |----------|---------|
 | `YOOKASSA_SHOP_ID` | ID магазина |
 | `YOOKASSA_SECRET_KEY` | Secret key API ЮKassa |
-| `YOOKASSA_RETURN_URL` | `/subscription/success` URL |
 | `YOOKASSA_WEBHOOK_SECRET` | Секрет webhook URL/header |
 | `ADMIN_EMAILS` | Dev mock/status для admin (comma-separated) |
 | `BILLING_DEV_ALLOW_STAGING` | `true` — dev routes на staging |

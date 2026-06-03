@@ -8,7 +8,6 @@ export type YookassaEnvValidation =
       shopId: string;
       secretKey: string;
       apiBase: string;
-      returnUrl: string | null;
       webhookSecret: string;
     }
   | {
@@ -29,7 +28,6 @@ function safeHost(url: string | null): string | null {
 export function validateYookassaEnv(): YookassaEnvValidation {
   const shopId = process.env.YOOKASSA_SHOP_ID?.trim() ?? "";
   const secretKey = process.env.YOOKASSA_SECRET_KEY?.trim() ?? "";
-  const returnUrl = process.env.YOOKASSA_RETURN_URL?.trim() || null;
   const webhookSecret = process.env.YOOKASSA_WEBHOOK_SECRET?.trim() ?? "";
   const apiBase = DEFAULT_YOOKASSA_API_BASE;
 
@@ -37,7 +35,6 @@ export function validateYookassaEnv(): YookassaEnvValidation {
     hasShopId: Boolean(shopId),
     hasSecretKey: Boolean(secretKey),
     hasWebhookSecret: Boolean(webhookSecret),
-    returnUrlHost: safeHost(returnUrl),
     apiBaseHost: safeHost(apiBase),
   };
 
@@ -61,5 +58,5 @@ export function validateYookassaEnv(): YookassaEnvValidation {
   }
 
   billingLog("yookassa_env_ok", details);
-  return { ok: true, shopId, secretKey, apiBase, returnUrl, webhookSecret };
+  return { ok: true, shopId, secretKey, apiBase, webhookSecret };
 }

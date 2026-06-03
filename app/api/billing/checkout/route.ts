@@ -20,12 +20,6 @@ function getAppOrigin(request: Request): string {
   return "http://localhost:3000";
 }
 
-function buildReturnUrl(baseReturnUrl: string, orderId: string): string {
-  const url = new URL(baseReturnUrl);
-  url.searchParams.set("order_id", orderId);
-  return url.toString();
-}
-
 export async function POST(request: Request) {
   const userId = await getUserIdFromRequest(request);
   if (!userId) {
@@ -68,10 +62,7 @@ export async function POST(request: Request) {
 
   const origin = getAppOrigin(request);
   const orderId = `reset_${userId}_${plan}_${Date.now()}`;
-  const returnUrl = buildReturnUrl(
-    yookassaEnv.returnUrl ?? `${origin}/subscription/success`,
-    orderId,
-  );
+  const returnUrl = `${origin}/`;
 
   billingLog("checkout_start", {
     userId,
