@@ -68,7 +68,7 @@
 
 ## 7. Production smoke (staging)
 
-- [ ] Реальная оплата минимального тарифа (monthly 299 ₽)
+- [ ] Реальная оплата минимального тарифа (monthly 159 ₽)
 - [ ] Webhook доходит на staging URL (ngrok / deploy preview)
 - [ ] Полный цикл: checkout → pay → return home → webhook activation → reload → re-login
 

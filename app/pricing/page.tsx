@@ -19,7 +19,7 @@ export default function PricingPage() {
       <LegalH2>Доступ к premium-функциям</LegalH2>
 
       <LegalH3>Тарифы</LegalH3>
-      <LegalList items={["30 дней доступа: 299 ₽", "365 дней доступа: 1990 ₽"]} />
+      <LegalList items={["30 дней доступа: 159 ₽", "365 дней доступа: 499 ₽"]} />
 
       <LegalH3>Trial</LegalH3>
       <p>3 дня бесплатно.</p>
