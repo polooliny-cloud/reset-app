@@ -17,7 +17,7 @@ type ActivateFreeTrialRpcRow = {
 
 /**
  * Starts a one-time trial via DB RPC (single transaction).
- * Must run with service-role client.
+ * Called with the signed-in user's JWT (or service-role).
  */
 export async function startFreeTrial(
   admin: SupabaseClient<Database>,

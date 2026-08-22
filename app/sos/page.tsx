@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { PremiumSoftLock } from '@/app/components/premium/PremiumSoftLock';
 import { LAST_TIMER_MESSAGE_NOTE, TIMER_TEXTS } from '@/lib/sos/timerTexts';
+import { SOS_PAGE_GLOW, SOS_TIMER_GLOW } from '@/lib/sos/visual';
 import { captureFirstVictoryIfNeeded } from '@/lib/posthogCapture';
 import { useProfileProgress } from '@/lib/profile/useProfileProgress';
 
@@ -208,11 +209,13 @@ export default function SosPage() {
         <div className="relative mx-auto w-full max-w-md min-h-screen shrink-0">
           <div
             aria-hidden
+            className="pointer-events-none fixed inset-0 z-0"
+            style={{ background: SOS_PAGE_GLOW }}
+          />
+          <div
+            aria-hidden
             className="pointer-events-none absolute left-1/2 top-1/2 z-0 aspect-square max-h-[min(80vh,20rem)] w-[min(100%,20rem)] -translate-x-1/2 -translate-y-1/2"
-            style={{
-              background:
-                'radial-gradient(ellipse at center, rgba(120, 95, 180, 0.11) 0%, rgba(9, 13, 20, 0) 68%)',
-            }}
+            style={{ background: SOS_TIMER_GLOW }}
           />
           <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center px-4 pt-10 text-center">
             <div className="flex w-full flex-col items-center gap-5">

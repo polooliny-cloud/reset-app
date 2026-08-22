@@ -2,6 +2,8 @@
 export const PUBLIC_PATHS = [
   "/",
   "/onboarding",
+  "/about",
+  "/legal",
   "/privacy",
   "/terms",
   "/refunds",

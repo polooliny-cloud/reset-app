@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
 import { useDevNavBypass } from "@/app/hooks/useDevNavBypass";
 import { useAuth } from "@/lib/auth/useAuth";
 
 import HomePageClient from "../HomePageClient";
-import { LandingPage } from "./LandingPage";
 
 function EntryLoading() {
   return (
@@ -17,17 +19,25 @@ function EntryLoading() {
   );
 }
 
-/** Root route: landing for guests, home for authenticated users or localhost dev bypass. */
+/** Root route: onboarding for guests, home for authenticated users or localhost dev bypass. */
 export function AppEntryPage() {
   const { session, initializing } = useAuth();
   const devBypass = useDevNavBypass();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (initializing) return;
+    if (!session?.user && !devBypass) {
+      router.replace("/onboarding");
+    }
+  }, [devBypass, initializing, router, session?.user]);
 
   if (initializing) {
     return <EntryLoading />;
   }
 
   if (!session?.user && !devBypass) {
-    return <LandingPage />;
+    return <EntryLoading />;
   }
 
   return <HomePageClient />;

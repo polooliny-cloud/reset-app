@@ -34,7 +34,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
     if (isPublicPath(pathname)) return;
     if (redirectingRef.current) return;
     redirectingRef.current = true;
-    router.replace("/");
+    router.replace("/onboarding");
   }, [initializing, session, pathname, router]);
 
   if (initializing) {

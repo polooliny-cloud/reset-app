@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 import { PremiumGate } from "@/app/components/PremiumGate";
 
-const EXEMPT_PATHS = ["/onboarding", "/settings"];
+const EXEMPT_PATHS = ["/onboarding", "/settings", "/legal", "/about"];
 
 export function PremiumGatedApp({ children }: { children: ReactNode }) {
   const pathname = usePathname();

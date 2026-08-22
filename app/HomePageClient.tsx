@@ -21,6 +21,7 @@ import {
   resolveMissionStatus,
 } from '@/lib/missions';
 import { captureEvent } from '@/lib/posthogCapture';
+import { SOS_TITLE_GRADIENT_CLASS } from '@/lib/sos/visual';
 import { PROFILE_LS_WINS_KEY, PROFILE_LS_XP_KEY } from '@/lib/profile/statsKeys';
 import { useProfileProgress } from '@/lib/profile/useProfileProgress';
 import { getDaysWord } from '@/lib/utils';
@@ -647,9 +648,9 @@ export default function Home() {
                   incrementMetric('sos_click');
                   captureEvent('sos_click');
                 }}
-                className="block w-full rounded-3xl border border-violet-300/30 bg-slate-900/80 px-5 py-5 text-center text-lg font-semibold leading-tight text-white shadow-[0_14px_30px_rgba(2,6,23,0.38)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
+                className="block w-full rounded-3xl border border-rose-400/25 bg-slate-900/80 px-5 py-5 text-center text-lg font-semibold leading-tight shadow-[0_14px_30px_rgba(2,6,23,0.38)] transition duration-200 ease-out hover:brightness-110 active:scale-[0.99]"
               >
-                Тревожная кнопка
+                <span className={SOS_TITLE_GRADIENT_CLASS}>Тревожная кнопка</span>
               </Link>
             </PremiumSoftLock>
           </div>

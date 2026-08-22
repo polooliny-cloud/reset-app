@@ -17,7 +17,7 @@ function formatRubPrice(amount: number): string {
 
 const BENEFITS = [
   { icon: "✦", title: "AI-поддержка", text: "Персональные подсказки в моменты риска" },
-  { icon: "◎", title: "SOS recovery tools", text: "Таймер и сценарии восстановления" },
+  { icon: "◎", title: "Тревожная кнопка", text: "Таймер и сценарии восстановления" },
   { icon: "↗", title: "История прогресса", text: "Победы, XP и динамика дисциплины" },
   { icon: "◇", title: "Система уровней", text: "Уровни навыка и награды за streak" },
   { icon: "★", title: "Premium функции", text: "Задания, миссии и расширенная аналитика" },
@@ -111,31 +111,31 @@ export default function SubscriptionPage() {
           Reset+
         </h1>
 
-        <section className="surface-card mt-6 overflow-hidden p-5">
-          <div
-            className={`rounded-2xl border px-4 py-4 ${
-              statusKind === "trial"
-                ? "border-violet-300/25 bg-violet-500/10"
-                : statusKind === "premium"
-                  ? "border-emerald-300/20 bg-emerald-500/8"
-                  : "border-slate-300/15 bg-slate-900/50"
-            }`}
-          >
-            <p className="text-base font-semibold text-white">{loading ? "Загрузка…" : header.title}</p>
-            {!loading && statusKind !== "none" ? (
-              <p className="text-measure mt-1.5 text-sm text-[#A8A8AE]">{header.subtitle}</p>
-            ) : null}
-            {!loading && statusKind === "none" ? (
-              <p className="text-measure mt-1.5 text-sm text-[#A8A8AE]">
-                Выберите подходящий вам тариф и активируйте Reset+.
-              </p>
-            ) : null}
-            {statusKind === "trial" ? (
-              <p className="mt-3 text-xs text-violet-200/80">
-                Списание не произойдёт автоматически. После trial вы сможете оформить подписку вручную.
-              </p>
-            ) : null}
-          </div>
+        <section
+          className={`mt-6 rounded-3xl border px-5 py-6 sm:px-6 sm:py-7 ${
+            statusKind === "trial"
+              ? "border-violet-300/25 bg-violet-500/10"
+              : statusKind === "premium"
+                ? "border-emerald-300/20 bg-emerald-500/8"
+                : "border-slate-300/15 bg-slate-900/50"
+          }`}
+        >
+          <p className="text-lg font-semibold leading-snug text-white sm:text-xl">
+            {loading ? "Загрузка…" : header.title}
+          </p>
+          {!loading && statusKind !== "none" ? (
+            <p className="text-measure mt-2 text-sm text-[#A8A8AE] sm:text-[15px]">{header.subtitle}</p>
+          ) : null}
+          {!loading && statusKind === "none" ? (
+            <p className="text-measure mt-2 text-sm text-[#A8A8AE] sm:text-[15px]">
+              Выберите подходящий вам тариф и активируйте Reset+.
+            </p>
+          ) : null}
+          {statusKind === "trial" ? (
+            <p className="mt-3 text-xs text-violet-200/80 sm:text-sm">
+              Списание не произойдёт автоматически. После trial вы сможете оформить подписку вручную.
+            </p>
+          ) : null}
         </section>
 
         <section className="mt-6">
@@ -239,7 +239,7 @@ export default function SubscriptionPage() {
 
         <footer className="mt-10 border-t border-white/8 pt-6">
           <nav aria-label="Правовая информация" className="mx-auto flex max-w-xs flex-col items-stretch gap-1.5">
-            {FOOTER_LINKS.map(({ href, label }) => (
+            {FOOTER_LINKS.filter(({ href }) => href !== "/contacts").map(({ href, label }) => (
               <Link
                 key={href}
                 href={`${href}?from=subscription`}

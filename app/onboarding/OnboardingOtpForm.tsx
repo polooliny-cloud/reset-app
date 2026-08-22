@@ -46,11 +46,10 @@ export function OnboardingOtpForm({
     onSubmit(trimmed);
   }
 
-  const title =
-    mode === "register" ? "Создайте свой аккаунт в Reset" : "Рады снова вас видеть";
+  const title = mode === "register" ? "Добро пожаловать" : "Рады снова вас видеть";
   const subtitle =
     mode === "register"
-      ? "Введи почту, чтобы присоединиться"
+      ? "Создайте аккаунт в Reset. Тысячи парней уже начали путь к контролю над собой."
       : "Введи почту, чтобы войти";
 
   return (
@@ -112,7 +111,7 @@ export function OnboardingOtpForm({
       <div className="mt-6 text-center">
         {mode === "register" ? (
           <button type="button" onClick={onSwitchToLogin} className="secondary-link">
-            У меня есть аккаунт
+            Уже есть аккаунт? Войти
           </button>
         ) : (
           <button type="button" onClick={onSwitchToRegister} className="secondary-link">

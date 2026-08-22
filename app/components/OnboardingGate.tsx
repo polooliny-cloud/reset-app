@@ -81,7 +81,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
         markChecked();
         return;
       }
-      router.replace('/');
+      router.replace('/onboarding');
       return;
     }
 

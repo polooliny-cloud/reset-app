@@ -5,7 +5,7 @@
 ## Подготовка
 
 - [ ] `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`, `YOOKASSA_WEBHOOK_SECRET` заданы в env
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` задан (webhook + checkout DB writes)
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` задан как **новый** ключ `sb_secret_…` (не JWT `eyJ…` / service_role). Нужен для trial, webhook и checkout.
 - [ ] Webhook URL в ЮKassa: `https://<domain>/api/webhooks/yookassa?secret=<YOOKASSA_WEBHOOK_SECRET>`
 - [ ] `NEXT_PUBLIC_APP_URL` указывает на публичный URL
 - [ ] Миграции `0004`-`0008` применены в Supabase

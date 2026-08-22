@@ -4,14 +4,15 @@ import { fetchPremiumStateForUser } from "@/lib/billing/fetchPremiumData";
 import { startFreeTrial } from "@/lib/billing/startFreeTrial";
 import { trialLog } from "@/lib/billing/trialLog";
 import { getUserIdFromRequest } from "@/lib/billing/authFromRequest";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createUserScopedClient, getBearerToken } from "@/lib/supabase/userClient";
 
 export const dynamic = "force-dynamic";
 
 /** Supabase-only trial activation. Must never call paid checkout or webhooks. */
 export async function POST(request: Request) {
   const userId = await getUserIdFromRequest(request);
-  if (!userId) {
+  const accessToken = getBearerToken(request);
+  if (!userId || !accessToken) {
     trialLog("request_unauthorized", {}, "warn");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -19,8 +20,8 @@ export async function POST(request: Request) {
   trialLog("request_started", { userId });
 
   try {
-    const admin = createAdminClient();
-    const result = await startFreeTrial(admin, userId);
+    const userClient = createUserScopedClient(accessToken);
+    const result = await startFreeTrial(userClient, userId);
 
     if (!result.ok) {
       trialLog("failed", { userId, code: result.code, error: result.error }, "error");
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: result.error, code: result.code }, { status });
     }
 
-    const state = await fetchPremiumStateForUser(admin, userId);
+    const state = await fetchPremiumStateForUser(userClient, userId);
 
     trialLog("premium_activated", {
       userId,

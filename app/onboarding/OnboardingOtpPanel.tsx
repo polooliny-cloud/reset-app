@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { DEFAULT_OTP_COOLDOWN_SECONDS } from "@/lib/auth/mapAuthError";
@@ -214,6 +215,16 @@ export function OnboardingOtpPanel({
             onResend={() => void sendOtp(email, true)}
           />
         )}
+        {step === "form" ? (
+          <div className="mt-auto pt-8 text-center">
+            <Link
+              href="/legal"
+              className="text-[12px] text-white/40 underline decoration-white/20 underline-offset-4 transition hover:text-white/60"
+            >
+              Юридическая информация
+            </Link>
+          </div>
+        ) : null}
       </div>
     </>
   );

@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 
-import {
-  LegalEmailLink,
-  LegalRequisitesBlock,
-  PublicLegalPageShell,
-} from "@/app/components/PublicLegalPageShell";
+import { PublicLegalPageShell } from "@/app/components/PublicLegalPageShell";
+import { ContactsBody } from "@/app/legal/LegalBodies";
 
 export const metadata: Metadata = {
   title: { absolute: "Контакты · Reset" },
@@ -14,12 +11,7 @@ export const metadata: Metadata = {
 export default function ContactsPage() {
   return (
     <PublicLegalPageShell title="Контакты · Reset">
-      <p>
-        Email:
-        <br />
-        <LegalEmailLink />
-      </p>
-      <LegalRequisitesBlock />
+      <ContactsBody />
     </PublicLegalPageShell>
   );
 }

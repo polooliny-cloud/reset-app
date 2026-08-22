@@ -8,6 +8,7 @@ import {
   isLocalhostHost,
 } from '@/lib/dev/localNav';
 import { clearOnboardingPendingAuthSession } from '@/lib/onboarding';
+import { clearOnboardingProgress } from '@/lib/onboardingProgress';
 
 export function DevTools() {
   const { signOut } = useAuth();
@@ -48,11 +49,12 @@ export function DevTools() {
           type="button"
           onClick={() => {
             clearOnboardingPendingAuthSession();
+            clearOnboardingProgress();
             clearDevNavBypass();
             void resetOnboardingInDb()
               .then(() => signOut())
               .then(() => {
-                window.location.assign('/');
+                window.location.assign('/onboarding');
               });
           }}
           className="rounded-lg border border-violet-500/40 bg-violet-100 px-2 py-1 text-xs font-medium text-violet-950 shadow-sm hover:bg-violet-200"

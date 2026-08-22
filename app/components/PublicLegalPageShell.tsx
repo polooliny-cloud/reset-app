@@ -6,9 +6,18 @@ import { PublicLegalBackButton } from "@/app/components/PublicLegalBackButton";
 type Props = {
   title: string;
   children: ReactNode;
+  defaultBackHref?: string;
+  backAriaLabel?: string;
+  backShowLabel?: boolean;
 };
 
-export function PublicLegalPageShell({ title, children }: Props) {
+export function PublicLegalPageShell({
+  title,
+  children,
+  defaultBackHref = "/",
+  backAriaLabel,
+  backShowLabel = false,
+}: Props) {
   return (
     <main className="app-shell min-h-screen">
       <div
@@ -19,7 +28,11 @@ export function PublicLegalPageShell({ title, children }: Props) {
         }}
       >
         <Suspense fallback={null}>
-          <PublicLegalBackButton />
+          <PublicLegalBackButton
+            defaultHref={defaultBackHref}
+            ariaLabel={backAriaLabel}
+            showLabel={backShowLabel}
+          />
         </Suspense>
 
         <h1 className="text-flow-heading text-2xl font-semibold text-white sm:text-[1.75rem]">
