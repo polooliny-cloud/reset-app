@@ -33,7 +33,7 @@ type ProfileRow = {
   xp: number | null;
   level: number | null;
   victories: number | null;
-  trial_started_at: string | null;
+  created_at: string | null;
 };
 
 export type ProfileProgressContextValue = {
@@ -68,8 +68,8 @@ function shouldMigrateLocalIntoNewProfile(
   const dbXp = row.xp ?? 0;
   const dbW = row.victories ?? 0;
   if (dbXp > 0 || dbW > 0) return false;
-  if (!row.trial_started_at) return false;
-  const age = Date.now() - new Date(row.trial_started_at).getTime();
+  if (!row.created_at) return false;
+  const age = Date.now() - new Date(row.created_at).getTime();
   if (!Number.isFinite(age) || age < 0) return false;
   return age < NEW_PROFILE_LS_MIGRATION_WINDOW_MS;
 }
@@ -99,7 +99,7 @@ export function ProfileProgressProvider({ children }: { children: ReactNode }) {
     async (uid: string): Promise<ProfileProgressValues> => {
       const { data: row, error } = await supabase
         .from("profiles")
-        .select("xp, level, victories, trial_started_at")
+        .select("xp, level, victories, created_at")
         .eq("id", uid)
         .maybeSingle();
 

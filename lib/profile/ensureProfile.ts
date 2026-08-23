@@ -46,6 +46,8 @@ export async function ensureProfileForUser(
       xp: 0,
       level: 1,
       victories: 0,
+      trial_started_at: null,
+      premium_until: null,
     };
 
     const { error: upsertError } = await client.from("profiles").upsert(row, {

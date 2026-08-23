@@ -20,7 +20,16 @@ import {
   getMissionSummary,
   resolveMissionStatus,
 } from '@/lib/missions';
+import { useAuth } from '@/lib/auth/useAuth';
 import { captureEvent } from '@/lib/posthogCapture';
+import {
+  clearStreakStartIso,
+  clearUserScopedItem,
+  readOrInitStreakStartIso,
+  readUserScopedItem,
+  writeStreakStartIso,
+  writeUserScopedItem,
+} from '@/lib/progress/userScopedStorage';
 import { SOS_TITLE_GRADIENT_CLASS } from '@/lib/sos/visual';
 import { PROFILE_LS_WINS_KEY, PROFILE_LS_XP_KEY } from '@/lib/profile/statsKeys';
 import { useProfileProgress } from '@/lib/profile/useProfileProgress';
@@ -58,22 +67,26 @@ function getStreakProgress(startMs: number, nowMs: number) {
   };
 }
 
-function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void }) {
+function StreakClock({
+  userId,
+  accountCreatedAt,
+  onDaysChange,
+}: {
+  userId: string;
+  accountCreatedAt: string | undefined;
+  onDaysChange: (days: number) => void;
+}) {
   const [days, setDays] = useState(0);
   const [time, setTime] = useState('00:00:00');
 
   useEffect(() => {
     function updateClock() {
       const nowMs = Date.now();
-      let stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) {
-        stored = new Date(nowMs).toISOString();
-        localStorage.setItem(STORAGE_KEY, stored);
-      }
+      const stored = readOrInitStreakStartIso(userId, accountCreatedAt);
       const parsedStart = new Date(stored).getTime();
       const startMs = Number.isFinite(parsedStart) ? parsedStart : nowMs;
       if (!Number.isFinite(parsedStart)) {
-        localStorage.setItem(STORAGE_KEY, new Date(startMs).toISOString());
+        writeStreakStartIso(userId, new Date(startMs).toISOString());
       }
 
       const progress = getStreakProgress(startMs, nowMs);
@@ -85,7 +98,7 @@ function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void })
     updateClock();
     const interval = setInterval(updateClock, 1000);
     return () => clearInterval(interval);
-  }, [onDaysChange]);
+  }, [accountCreatedAt, onDaysChange, userId]);
 
   return (
     <>
@@ -102,6 +115,9 @@ function StreakClock({ onDaysChange }: { onDaysChange: (days: number) => void })
 
 export default function Home() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+  const accountCreatedAt = user?.created_at;
   const { isPremium } = usePremium();
   const { xp, victories, awardVictory, resetProgress } = useProfileProgress();
   const wins = victories;
@@ -121,23 +137,23 @@ export default function Home() {
   const rightInset = `calc(${EDGE_OFFSET}px + env(safe-area-inset-right))`;
 
   const syncLabelFromStorage = useCallback(() => {
-    const nowMs = Date.now();
-    let stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      stored = new Date(nowMs).toISOString();
-      localStorage.setItem(STORAGE_KEY, stored);
+    if (!userId) {
+      setStreakStartMs(null);
+      setDaysCount(0);
+      return;
     }
-
+    const nowMs = Date.now();
+    const stored = readOrInitStreakStartIso(userId, accountCreatedAt);
     const parsedStart = new Date(stored).getTime();
     const startMs = Number.isFinite(parsedStart) ? parsedStart : nowMs;
     if (!Number.isFinite(parsedStart)) {
-      localStorage.setItem(STORAGE_KEY, new Date(startMs).toISOString());
+      writeStreakStartIso(userId, new Date(startMs).toISOString());
     }
 
     const progress = getStreakProgress(startMs, nowMs);
     setDaysCount(progress.days);
     setStreakStartMs(startMs);
-  }, []);
+  }, [accountCreatedAt, userId]);
 
   useEffect(() => {
     syncLabelFromStorage();
